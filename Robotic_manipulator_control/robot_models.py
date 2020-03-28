@@ -6,7 +6,7 @@ These are all child classes the the path_dynamics_analysis class which helps to
 visualise the state space in a general way
 """
 
-from sympy import symbols, Matrix, sin, cos, diff, Abs
+from sympy import symbols, Matrix, sin, cos, diff, Abs, Subs
 from my_sorting import combine_to_tuples
 from path_dynamics_analysis import path_dynamics
 from path_dynamics_control import path_dynamics_control
@@ -224,7 +224,7 @@ class revolute_prismatic(path_dynamics):
         
         if x1 -  x2 != 0:
             m = (y1 - y2)/(x1 -  x2)
-            print(m)
+            #print(m)
             c = y1 - m*x1
             
             q2s = c/(sin(q1s) - m*cos(q1s))# enforce rule to make q2 vary so that the end effector follows an sreaight line
