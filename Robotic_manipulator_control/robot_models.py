@@ -332,7 +332,8 @@ class revolute_prismatic(path_dynamics):
         simple_plot(admissable_region, "s", "$\dot{s}$", 1)
         control = path_dynamics_control(self)
         
-        control.generate_tangent_cones(bounds, s_lim, sd_lim)
+        tangent_cone_components = control.generate_tangent_cone_components(bounds, s_lim, sd_lim)
+        print(tangent_cone)
         #get big list of tangent cones corresponding to ead point in the state space 
         #the cones can be addiquitly be described by [(s,sd), L(s,sd), U(s, sd)]
         #so the return is a list containing:

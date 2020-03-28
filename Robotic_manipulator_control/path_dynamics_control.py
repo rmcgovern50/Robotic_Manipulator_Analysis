@@ -20,7 +20,7 @@ class path_dynamics_control():
         self.robot = robot
         #print("yeo")
         
-    def generate_tangent_cones(self, bounds, s_lim, sd_lim):
+    def generate_tangent_cone_components(self, bounds, s_lim, sd_lim):
         """
         This method will generate tangent cones that can be used to work out 
         the possible velcities along the state space of path dynamics. 
@@ -66,7 +66,8 @@ class path_dynamics_control():
             sd_val = sd_lim[0] # reset_sd_lim
             s_val = s_val + s_inc
         
-        print(tangent_cones)
+        #print(tangent_cones)
+        return tangent_cones
         #print(self.robot.type)
         
     def get_min_upper_max_lower(self, s_val, sd_val, bounds):
@@ -130,5 +131,5 @@ class path_dynamics_control():
 
         L = lower_lim
         U = upper_lim
-        print(L, U)
+        #print(L, U)
         return L, U
