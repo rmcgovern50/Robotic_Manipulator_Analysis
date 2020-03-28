@@ -278,8 +278,7 @@ class revolute_prismatic(path_dynamics):
             simple_polar_plot(coordinates)
         if plot_q1_against_q2 == 1:
             simple_plot(coordinates, 'q1', 'q2', 1)
-            
-
+    
 
     def Run_path_dynamics(self, path_straight_line, s_lims, sd_lims):
         """
@@ -329,11 +328,13 @@ class revolute_prismatic(path_dynamics):
         #calculate admissable region
         admissable_region, boundry_points = self.calc_admissable(bounds, s_lim, sd_lim)
 
-        simple_plot(admissable_region, "s", "$\dot{s}$", 1)
+        plot = self.generate_state_space_plot(admissable_region, 1)
+        plot.show()
+        #simple_plot(admissable_region, "s", "$\dot{s}$", 1)
         control = path_dynamics_control(self)
         
         tangent_cone_components = control.generate_tangent_cone_components(bounds, s_lim, sd_lim)
-        print(tangent_cone)
+        print(tangent_cone_components)
         #get big list of tangent cones corresponding to ead point in the state space 
         #the cones can be addiquitly be described by [(s,sd), L(s,sd), U(s, sd)]
         #so the return is a list containing:

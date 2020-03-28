@@ -4,6 +4,7 @@ This is a class that will allow path dynamics to be analysed
 """
 from my_math import sub_into_matrix
 from sympy import symbols, Matrix, diff
+import matplotlib.pyplot as plt
 
 class path_dynamics():
     """
@@ -294,6 +295,23 @@ class path_dynamics():
             return False
         
 
+    def generate_state_space_plot(self, admissable_region, marker_size):
+        """
+        this function simply takes in a list of tuples and plots them
+        Arguments:
+            admissable_region [(s1,sd1), (s2,sd2), ... ,(sn,sdn)]
+            
+        return:
+            plt- the plot so that other operations can be superimosed on it later
+        """
         
+        x_val = [x[0] for x in admissable_region]
+        y_val = [x[1] for x in admissable_region]
         
-     
+        plt.plot(x_val,y_val,'or',ms=marker_size)
+        plt.xlabel("s")
+        plt.ylabel("$\dot{s}$")
+        
+        #plt.show()
+        
+        return plt
