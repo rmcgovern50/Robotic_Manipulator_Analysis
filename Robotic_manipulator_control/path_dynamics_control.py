@@ -133,3 +133,24 @@ class path_dynamics_control():
         U = upper_lim
         #print(L, U)
         return L, U
+    
+    
+        def dsd_ds(self, sd, sdd):
+            """
+            Arguments:
+                sd -  ds/dt
+                sdd - d^2s/dt^2
+            return
+                dsd/ds 
+            """
+            dsd_ds = abs(sqrt(sd**2 + sdd**2))
+            
+            #choose -ve square root
+            if sdd < 0:
+                dsd_ds = -1*(dsd_ds)
+                
+            return dsd_ds
+            
+            
+            
+            
