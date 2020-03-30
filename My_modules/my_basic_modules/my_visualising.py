@@ -25,6 +25,28 @@ def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
     plt.show()
 
 
+def add_to_plot(plot, tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
+    """
+    this function simply takes in a list of tuples and plots them on an existing plot
+    Arguments:
+        tuple_list [(x1,y1), (x2,y2), ... ,(xn,yn)]
+    
+    """
+    x_val = [x[0] for x in tuple_list]
+    y_val = [x[1] for x in tuple_list]
+    plot.plot(x_val,y_val,'or',ms=marker_size)
+    plot.xlabel(xaxislabel)
+    plot.ylabel(yaxislabel)
+    #plot.show()
+    
+    return plot
+
+
+
+
+
+
+
 def simple_polar_plot(tuple_list, marker_size=1):
     """
     this function simply takes in a list of tuples and plots them in a polar coordinate system thete r

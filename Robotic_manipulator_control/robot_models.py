@@ -9,12 +9,13 @@ visualise the state space in a general way
 from sympy import symbols, Matrix, sin, cos, diff, Abs, Subs
 from my_sorting import combine_to_tuples
 from path_dynamics_analysis import path_dynamics
-from path_dynamics_control import path_dynamics_control
+from path_dynamics_control import path_dynamics_controller as pdc
 import math as m
 from matplotlib import pyplot
-from my_visualising import simple_polar_plot, simple_plot
+from my_visualising import simple_polar_plot, simple_plot, add_to_plot
 
-class revolute_prismatic(path_dynamics):
+class revolute_prismatic(path_dynamics, pdc):
+    pass
     """
     This class is for the case specific parts of revolute slide robot
     The path_dynamics analysis class will use the information here to
@@ -47,7 +48,7 @@ class revolute_prismatic(path_dynamics):
         constants_to_sub = combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
-        super().__init__(constants_to_sub)
+        super(revolute_prismatic, self).__init__(constants_to_sub)
         
     def dynamics(self):
         
@@ -318,51 +319,89 @@ class revolute_prismatic(path_dynamics):
         #print(Ms, Cs, gs)
         
         #calculate bounds based on the path dynamics
-        bounds = self.calc_bounds(Ms, Cs, gs)
+        self.bounds = self.calc_bounds(Ms, Cs, gs)
         #print(bounds)
+
+        #get big list of tangent cones corresponding to ead point in the state space 
+
+
+        #tangent_cone = f(s, sd)
+    def generate_time_optimal_trajectory(self):
+        """
+        method to take steps neccesary to design a time opeitmal control trajectory
         
+        return:
+            trajectory - [(s1, sd1),...,(sn,sdn) ]
+        """
+    
         #define grid
         s_lim = [0, 1, 0.1]
         sd_lim = [0,10, 0.1]
         
         #calculate admissable region
-        admissable_region, boundry_points = self.calc_admissable(bounds, s_lim, sd_lim)
+        admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
 
         plot = self.generate_state_space_plot(admissable_region, 1)
+        #plot.show()
+   
+    
+        add_to_plot(plot, [(0.2,6)])
         plot.show()
-        #simple_plot(admissable_region, "s", "$\dot{s}$", 1)
-        control = path_dynamics_control(self)
+        self.simple_time_optimal_controller()
         
-        tangent_cone_components = control.generate_tangent_cone_components(bounds, s_lim, sd_lim)
-        print(tangent_cone_components)
-        #get big list of tangent cones corresponding to ead point in the state space 
-        #the cones can be addiquitly be described by [(s,sd), L(s,sd), U(s, sd)]
-        #so the return is a list containing:
-        #the coordinate of the tangent cone (s,sd)
-        #the downward component for decelleration L(s, sd)
-        #the upward compnent of the tangent cone
-        #return that raw list and possibly a pandas dataframe for easy manipulation of the data
-        
-        #tangent_cones = calculate_all_tangent_cones_in_the_region()
+        #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
+        #print(tangent_cone_components)
         
         
-        
-        #write all tangent cones into a csv file so they dont have to be recalculated
-        #each time, maybe use a pandas dataframe for this for quick ret?
-        #save_results(tangent_cones)
-        
-
-        #tangent_cone = f(s, sd)
-         
-        
-        
-        
-        
+        print("design controller here")
+        return 1
             
-            
-            
-            
-            
+      
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 #==============================================================================
             
 

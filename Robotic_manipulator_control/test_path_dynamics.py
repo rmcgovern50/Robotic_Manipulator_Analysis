@@ -31,7 +31,7 @@ def test_plot_state_space():
     sd_lim = [0,10, 0.1]
     
     manipulator.Run_path_dynamics(straight_line_definition, s_lim, sd_lim)
-   
+    trajectory = manipulator.generate_time_optimal_trajectory()
 
 
     

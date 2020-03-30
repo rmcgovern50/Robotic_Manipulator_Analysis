@@ -6,6 +6,7 @@ from my_math import sub_into_matrix
 from sympy import symbols, Matrix, diff
 import matplotlib.pyplot as plt
 
+
 class path_dynamics():
     """
     This class will perform the calculations for analysing the admissable 
@@ -21,7 +22,7 @@ class path_dynamics():
             
         """
         self.constants_to_sub = constants_to_sub
-        
+
 
     def calc_qs_matrices(self, qs, qsd, qsdd):
         """
@@ -295,7 +296,7 @@ class path_dynamics():
             return False
         
 
-    def generate_state_space_plot(self, admissable_region, marker_size):
+    def generate_state_space_plot(self, admissable_region, marker_size=1):
         """
         this function simply takes in a list of tuples and plots them
         Arguments:
@@ -315,3 +316,4 @@ class path_dynamics():
         #plt.show()
         
         return plt
+    
