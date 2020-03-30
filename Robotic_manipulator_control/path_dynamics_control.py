@@ -5,7 +5,7 @@ This function will take a manipulator model and work out control actions
 
 @author: Ryan
 """
-
+from math import sqrt
 
 class path_dynamics_controller():
     """
@@ -17,58 +17,182 @@ class path_dynamics_controller():
         print("initialised")
         #pass        
 
-        
-    def generate_tangent_cone_components(self, bounds, s_lim, sd_lim):
-        """
-        This method will generate tangent cones that can be used to work out 
-        the possible velcities along the state space of path dynamics. 
-        Arguments:
-            bounds = [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
-                    B01 is bound 1 on actuator zero
-                    B02 is bound 2 on actuator zero
-                    Ms0 is the value that decides the upper and lower at some s, sd number
-            
-        return
-         tangent_cones = [[(s1, sd1), (L(s1,sd1), U(s1, sd1))]_1..., [(sn, sdn), (L(sn,sdn), U(sn, sdn))]_n]
-        
-        """
-        s_val = s_lim[0]
-        s_max = s_lim[1]
-        s_inc = s_lim[2]
 
-        sd_val = sd_lim[0]
-        sd_max = s_lim[1]
-        sd_inc = s_lim[2]
+
+  
+    def simple_time_optimal_controller(self, initial, final, bounds):
+        """
+        This is a method that will output a valid trajectoy of (s, sd) points 
+        from which a joint torque input sequence can be derived
+        It works by using a knowledge of actuator limits in the state space
+        Given an intial and final condition the algorithm will try and find the fastest trajectory 
         
-        tangent_cones = []
-        tangent_cone = []
+        Arguments:
+            initial- (s_start, sd_start) initial position
+            final - (s_end, sd_end) - final position
+            bounds -  [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
+            B01 is bound 1 on actuator zero
+            B02 is bound 2 on actuator zero
+            Ms0 is the value that decides the upper and lower at some s, sd number
+        return:
+            trajectory - [(s1,sd1), ... , (sn, sdn) ]
+            trajectory from s_start->s_end
         
-        #while loops loop through a regon of the parameterised state space
-        while(s_val <= s_max):
+        
+        
+        The process is outined as:
             
-            while(sd_val <= sd_max):
+            1- Start at final position and integrate backwards sdd == -L until U-L <= 0 (velocity limit curve hit) 
+              or s==0 (max acceleration decelleration possible)
+            
+            2- Start at intial and integrate forward sdd == U until either:
+                U-L <= 0 (velocity limit or inadmissable region found) or s >= 1
+            
+            3- If the inadmissable region is hit in step 2:
+                    take steps backwards taking the sdd == L and run forwards until inadmissable region is hit or sd == 0
+                    repeat until it isnt hit and at the point where the boundy of this region 
+                    find the point on this curve that is closest to the in admissable region (mark it as a switching point)
+            
+            4- switch sdd == U at point in step 3, integrat forward until either:
+                if U-L <=0: repeat step 3:
                 
-                #evaluate numerically
-                L, U = self.get_min_upper_max_lower(s_val, sd_val, bounds)                
-                tangent_cone = [(s_val, sd_val), L, U]
-                
-                if s_val == 0:
-                    tangent_cones = [tangent_cone]
-                else:
-                    tangent_cones.append(tangent_cone)
-                #print(upper_lim)
-                
-                #print(bounds)
-                sd_val = sd_val + sd_inc
-                
-            sd_val = sd_lim[0] # reset_sd_lim
-            s_val = s_val + s_inc
+                else if curve formed by step 1 is intersected mark this as a switching point for decelleration
+            
+            5- output a valid serise of points along the trajectories calculated 
+                (these can readily be used to calculater the neccessary  actuator torques)
+        """
         
-        #print(tangent_cones)
-        return tangent_cones
-        #print(self.robot.type)
         
-    def get_min_upper_max_lower(self, s_val, sd_val, bounds):
+        #1 backward integrate sdd = -L
+        
+        #perform the backward integration first from final position
+        seg1 = self.integrate_motion(final, bounds, 'backwards')
+        
+        #print(seg1)
+        
+        
+        
+        #2 forward integrate sdd == +U
+        
+        seg2 = self.integrate_motion(initial, bounds, 'forwards')
+        
+        #3 backstep until tangent found sdd == -L
+        
+        
+        #4 goto step 2
+        
+        
+        #5 if curve formed in step one is intersected end else goto 3
+        
+        #6 repeat 5 until end curve is found
+        
+        
+        
+        #trajectory = 1
+        print("we got the controller designed")
+        trajectory = seg1 +seg2
+        return trajectory
+        
+
+
+    def integrate_motion(self, pos, bounds, direction='backwards'):
+        """
+        Arguments:
+            start_coordinate - (x, y)
+            bounds -  [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
+                        B01 is bound 1 on actuator zero
+                        B02 is bound 2 on actuator zero
+                        Ms0 is the value that decides the upper and lower at some s, sd number
+        return -
+            trajectory - [(s1,sd1), ... , (sn, sdn) ]
+        """
+        c = 0.1        
+        current_pos = pos
+        trajectory = [current_pos]
+        step_size = 0.01
+        i = 0
+        
+
+        integration_complete = False
+
+        while(integration_complete == False or i>1000):
+            
+            #calculate -L
+            #print(current_pos)
+            L, U = self.get_sdd_lims(current_pos, bounds)
+
+            if U>=L:
+    
+                #print(L, U)
+                s = current_pos[0]
+                sd = current_pos[1]
+                
+
+                #set how the integration works in if statements
+                if direction == 'backwards':
+                    
+                    change_in_s, change_in_sd = self.calc_change_s_sd(sd, L, step_size)
+                    
+                    #print((change_in_s, change_in_sd, sqrt(change_in_s**2 + change_in_sd**2)))
+                    new_s = s - change_in_s#c*sd
+                    new_sd = sd - change_in_sd#c*L
+                    
+                elif direction == 'forwards':
+                    
+                    change_in_s, change_in_sd = self.calc_change_s_sd(sd, U, step_size)
+                    
+                    #print((change_in_s, change_in_sd, sqrt(change_in_s**2 + change_in_sd**2)))
+                    new_s = s + change_in_s#c*sd
+                    new_sd = sd + change_in_sd#c*L
+                
+                new_position = (new_s, new_sd)
+                #check of valid
+                if new_position[0] >= 0 and new_position[0] <= 1 and new_position[1] >= 0:
+                    trajectory.append(new_position)
+                
+                
+                current_pos = new_position
+                i = i + 1
+            else:
+                integration_complete = True
+
+            
+        #print('i=',i, )
+
+
+
+        return trajectory
+
+    def calc_change_s_sd(self, s_vel, sd_vel, step_size):
+        """
+        method will take in s and sd changes and ensure that the magnitude of the step
+        is equal so some stepsize
+        return- delta_s (value to be added to current s)
+                delta_sd (value to be added to current sd)
+        
+        """
+        #account for all cases
+        if abs(s_vel) > 0 and abs(sd_vel) > 0:
+            
+            length = sqrt(s_vel**2 + sd_vel**2)
+            delta_s = (s_vel*step_size)/length
+            delta_sd = (sd_vel*step_size)/length
+            #print()
+        elif  abs(s_vel) > 0 and abs(sd_vel) == 0:
+            
+            delta_s = step_size
+            delta_sd = 0
+        
+        elif abs(sd_vel) > 0 and abs(s_vel) == 0:
+            delta_sd = step_size
+            delta_s = 0
+        else:
+            raise Exception("something is wrong with calc_change_sd (s_vel, sd_vel)=", (s_vel, sd_vel))
+
+
+        return delta_s, delta_sd
+
+    def get_sdd_lims(self, coordinate, bounds):
         """
         This is a method that will simply take in a coordnate in the state space and
         output the up and down component of the tangent cone at that point
@@ -93,7 +217,8 @@ class path_dynamics_controller():
         sd = self.sd
         upper = 0
         lower = 0
-        
+        s_val = coordinate[0]
+        sd_val = coordinate[1]
         
         
         #loop through all the actuators and evaluate the bounds
@@ -144,6 +269,8 @@ class path_dynamics_controller():
         return
             dsd/ds 
         """
+        
+        
         dsd_ds = abs(sqrt(sd**2 + sdd**2))
         
         #choose -ve square root
@@ -151,59 +278,56 @@ class path_dynamics_controller():
             dsd_ds = -1*(dsd_ds)
             
         return dsd_ds
+  
     
-    def simple_time_optimal_controller(self):#, initial, final, plot):
+    
+
+    def generate_tangent_cone_components(self, bounds, s_lim, sd_lim):
         """
-        This is a method that will output a valid trajectoy of (s, sd) points 
-        from which a joint torque input sequence can be derived
-        It works by using a knowledge of actuator limits in the state space
-        Given an intial and final condition the algorithm will try and find the fastest trajectory 
+        This method will generate tangent cones that can be used to work out 
+        the possible velcities along the state space of path dynamics. 
+        Arguments:
+            bounds = [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
+                    B01 is bound 1 on actuator zero
+                    B02 is bound 2 on actuator zero
+                    Ms0 is the value that decides the upper and lower at some s, sd number
             
-        The process is outined as:
+        return
+         tangent_cones = [[(s1, sd1), (L(s1,sd1), U(s1, sd1))]_1..., [(sn, sdn), (L(sn,sdn), U(sn, sdn))]_n]
+        
+        """
+        s_val = s_lim[0]
+        s_max = s_lim[1]
+        s_inc = s_lim[2]
+
+        sd_val = sd_lim[0]
+        sd_max = s_lim[1]
+        sd_inc = s_lim[2]
+        
+        tangent_cones = []
+        tangent_cone = []
+        
+        #while loops loop through a regon of the parameterised state space
+        while(s_val <= s_max):
             
-            1- Start at final position and integrate backwards sdd == -L until U-L <= 0 (velocity limit curve hit) 
-              or s==0 (max acceleration decelleration possible)
-            
-            2- Start at intial and integrate forward sdd == U until either:
-                U-L <= 0 (velocity limit or inadmissable region found) or s >= 1
-            
-            3- If the inadmissable region is hit in step 2:
-                    take steps backwards taking the sdd == L and run forwards until inadmissable region is hit or sd == 0
-                    repeat until it isnt hit and at the point where the boundy of this region 
-                    find the point on this curve that is closest to the in admissable region (mark it as a switching point)
-            
-            4- switch sdd == U at point in step 3, integrat forward until either:
-                if U-L <=0: repeat step 3:
+            while(sd_val <= sd_max):
                 
-                else if curve formed by step 1 is intersected mark this as a switching point for decelleration
-            
-            5- output a valid serise of points along the trajectories calculated 
-                (these can readily be used to calculater the neccessary  actuator torques)
-        """
+                #evaluate numerically
+                L, U = self.get_min_upper_max_lower(s_val, sd_val, bounds)                
+                tangent_cone = [(s_val, sd_val), L, U]
+                
+                if s_val == 0:
+                    tangent_cones = [tangent_cone]
+                else:
+                    tangent_cones.append(tangent_cone)
+                #print(upper_lim)
+                
+                #print(bounds)
+                sd_val = sd_val + sd_inc
+                
+            sd_val = sd_lim[0] # reset_sd_lim
+            s_val = s_val + s_inc
         
-        #1 backward integrate sdd = -L
-        
-        
-        
-        #2 forward integrate sdd == +U
-        
-        
-        
-        #3 backstep until tangent found sdd == -L
-        
-        
-        #4 goto step 2
-        
-        
-        #5 if curve formed in step one is intersected end else goto 3
-        
-        #6 repeat 5 until end curve is found
-        
-        
-        
-        
-        print("we got the controller designed")
-        
-        
-        
-        
+        #print(tangent_cones)
+        return tangent_cones
+        #print(self.robot.type)

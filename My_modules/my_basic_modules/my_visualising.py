@@ -25,7 +25,7 @@ def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
     plt.show()
 
 
-def add_to_plot(plot, tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
+def add_to_plot(plot, tuple_list, marker_size=10, mfc='blue', show=0):
     """
     this function simply takes in a list of tuples and plots them on an existing plot
     Arguments:
@@ -34,10 +34,11 @@ def add_to_plot(plot, tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_siz
     """
     x_val = [x[0] for x in tuple_list]
     y_val = [x[1] for x in tuple_list]
-    plot.plot(x_val,y_val,'or',ms=marker_size)
-    plot.xlabel(xaxislabel)
-    plot.ylabel(yaxislabel)
-    #plot.show()
+    plot.plot(x_val,y_val,'or',ms=marker_size, markerfacecolor = mfc)
+
+    
+    if show ==1:
+        plot.show()
     
     return plot
 

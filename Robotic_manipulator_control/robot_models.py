@@ -305,7 +305,7 @@ class revolute_prismatic(path_dynamics, pdc):
 
         qs = self.straight_line_parameterisation(path_straight_line[0], path_straight_line[1])
         
-        self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
+        #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
         
         q, qd,qdd, dqds, d2qds2  = self.path_parameterisation(qs)
         #print(q, qd,qdd, dqds, d2qds2)
@@ -345,16 +345,22 @@ class revolute_prismatic(path_dynamics, pdc):
         #plot.show()
    
     
-        add_to_plot(plot, [(0.2,6)])
+
+        
+        
+        trajectory = self.simple_time_optimal_controller((0,0), (1,0), self.bounds)
+        
+        add_to_plot(plot, trajectory,5)
         plot.show()
-        self.simple_time_optimal_controller()
+        
         
         #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
         #print(tangent_cone_components)
         
         
         print("design controller here")
-        return 1
+
+        return trajectory
             
       
         

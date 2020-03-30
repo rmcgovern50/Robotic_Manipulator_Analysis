@@ -25,7 +25,7 @@ def test_plot_state_space():
 
     #instatiate class with the physical parameters
     manipulator = revolute_prismatic(0.1, [(-1,1), (-1,1)])
-    straight_line_definition = [(2, 0.5), (0.5, 2)] 
+    straight_line_definition = [(0.1, 1), (1, 1)] 
     #define grid to analyse
     s_lim = [0, 1, 0.1]
     sd_lim = [0,10, 0.1]
