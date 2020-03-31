@@ -6,6 +6,9 @@ This function will take a manipulator model and work out control actions
 @author: Ryan
 """
 from math import sqrt
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 class path_dynamics_controller():
     """
@@ -69,16 +72,41 @@ class path_dynamics_controller():
         seg1 = self.integrate_motion(final, bounds, 'backwards')
         
         #print(seg1)
-        
-        
+        x_val = [x[0] for x in seg1]
+        y_val = [x[1] for x in seg1]
+         
+        x_val = np.array(x_val, dtype=float)
+        #n = np.linspace(-20,20,10)
+        #print(type(x_val), type(n))
+        y_val = np.array(y_val ,dtype=float)
+        n = np.linspace(0, 1, 100)
+        z = np.polyfit(x_val,y_val,5)
+        p = np.poly1d(z)
+        plt.plot(n, p(n))
+        #print(type(p), p)
         
         #2 forward integrate sdd == +U
         
         seg2 = self.integrate_motion(initial, bounds, 'forwards')
         
+        #print(seg1)
+        x_val = [x[0] for x in seg2]
+        y_val = [x[1] for x in seg2]
+         
+        x_val = np.array(x_val, dtype=float)
+        #n = np.linspace(-20,20,10)
+        #print(type(x_val), type(n))
+        y_val = np.array(y_val ,dtype=float)
+        n = np.linspace(0, 1, 100)
+        z = np.polyfit(x_val,y_val,5)
+        p = np.poly1d(z)
+        plt.plot(n, p(n))
+        
+        
+        
         #3 backstep until tangent found sdd == -L
-        
-        
+
+
         #4 goto step 2
         
         
