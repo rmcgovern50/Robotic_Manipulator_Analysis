@@ -1,6 +1,6 @@
 from math import sin, cos, tan
 from sympy import simplify, symbols, Eq, Matrix
-
+import numpy as np
 
 def sec(x):
 
@@ -108,6 +108,43 @@ def sub_into_matrix(matrix, vars_to_sub):
 
 
     return new_matrix
+
+
+def fit_curve(tuple_list, degree=1):
+    """
+    this function simply takes in a list of tuples and fits a curve to them
+    Arguments:
+        tuple_list [(x1,y1), (x2,y2), ... ,(xn,yn)]
+    
+    """
+    x_val = [x[0] for x in tuple_list]
+    y_val = [x[1] for x in tuple_list]
+         
+    #convert the lists to numpy
+    x_val = np.array(x_val, dtype=float)
+    y_val = np.array(y_val ,dtype=float)
+    
+    z = np.polyfit(x_val,y_val,1)
+        
+    p1 = np.poly1d(z)
+    return x_val, p1(x_val)
+    
+    #plt.plot(n, p1(x_val))
+
+
+def intersection(p1, p2):
+    """
+    this function takes in two lines and returns the intersection of the two    
+    """
+    x = np.roots(p1-p2)
+    y = np.polyval(p1, x)
+    print(x, y)
+    intersection = (x[0], y[0])
+    
+    return intersection
+
+
+
 
         
         

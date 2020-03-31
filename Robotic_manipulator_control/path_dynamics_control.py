@@ -8,7 +8,7 @@ This function will take a manipulator model and work out control actions
 from math import sqrt
 import numpy as np
 import matplotlib.pyplot as plt
-
+from my_math import fit_curve, intersection
 
 class path_dynamics_controller():
     """
@@ -70,25 +70,18 @@ class path_dynamics_controller():
         
         #perform the backward integration first from final position
         seg1 = self.integrate_motion(final, bounds, 'backwards')
-        
-        #print(seg1)
-        x_val = [x[0] for x in seg1]
-        y_val = [x[1] for x in seg1]
-         
-        x_val = np.array(x_val, dtype=float)
-        #n = np.linspace(-20,20,10)
-        #print(type(x_val), type(n))
-        y_val = np.array(y_val ,dtype=float)
-        n = np.linspace(0, 1, 100)
-        z = np.polyfit(x_val,y_val,1)
-        p1 = np.poly1d(z)
-        plt.plot(n, p1(n))
-        #print(type(p), p)
-        
+        x, p1 = fit_curve(seg1)
+        plt.plot(x,p1)
+
         #2 forward integrate sdd == +U
         
         seg2 = self.integrate_motion(initial, bounds, 'forwards')
         
+        #intersection_point = self.find_intersections(seg1, seg2)
+        
+        x, p2 = fit_curve(seg2)
+        plt.plot(x,p2)
+        """
         #print(seg1)
         x_val = [x[0] for x in seg2]
         y_val = [x[1] for x in seg2]
@@ -108,8 +101,9 @@ class path_dynamics_controller():
         intersection = (r[0], e[0])
         print(intersection)
         plt.plot(intersection[0], intersection[1], 'or',ms=10)
-        plt.show()
         
+        #plt.show()
+        """
         #plot
         
         #3 backstep until tangent found sdd == -L
@@ -129,6 +123,71 @@ class path_dynamics_controller():
         trajectory = seg1 +seg2
         return trajectory
         
+    def find_intersections(self, seg1, seg2):
+        """
+        this method takes in two lists of points and decides if they intersect
+        Arguments:
+            seg1 & seg2 - list of tuples [(x1, y1), ... , (xn, yn)]
+        return:
+                        
+        """
+        
+        i = 0
+        j = 0
+        
+        seg1_section = []
+        seg2_section = []
+        
+        
+        while(i < len(seg1)):
+        
+            while(j < len(seg2)):
+                
+                #seperation = sqrt((seg1[i][0] - seg2[j][0])**2 + (seg1[i][1] - seg2[j][1])**2)
+                
+                
+                if seperation < 0.05:
+                                    
+                    if len(seg1_section) == 0:
+                        seperation_list = seperation
+                        seg1_section = [seg1[i]]
+                        seg2_section = [seg2[j]]
+                        
+                    else:
+                        seperation_list.append(seperation)
+                        seg1_section.append(seg1[i])
+                        seg2_section.append(seg2[j])
+
+                    #print(seperation, seg1[i], seg2[j])
+            
+                j = j + 10
+            
+            
+            j = 0
+            i = i + 10
+
+
+        val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
+        
+        print(val, idx)
+        #print(seg1_section)
+        #print("ewfbiuewrbgerbiuogrvb")
+        #print(seg2_section)
+        
+        #x, p1 = fit_curve(seg1_section)
+        #plt.plot(x,p1)
+        
+        #x, p2 = fit_curve(seg2_section)
+        #plt.plot(x,p1)
+        
+        
+        #point = intersection(p1,p2)
+        
+        #plt.plot(point, 'or',ms=10)
+        
+        #plt.show()
+        return 1
+
 
 
     def integrate_motion(self, pos, bounds, direction='backwards'):

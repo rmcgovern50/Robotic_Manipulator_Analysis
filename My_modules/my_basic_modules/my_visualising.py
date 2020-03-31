@@ -10,6 +10,7 @@ these
 import matplotlib.pyplot as plt
 from sympy import pprint
 
+
 def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
     """
     this function simply takes in a list of tuples and plots them
@@ -41,8 +42,6 @@ def add_to_plot(plot, tuple_list, marker_size=10, mfc='blue', show=0):
         plot.show()
     
     return plot
-
-
 
 
 
