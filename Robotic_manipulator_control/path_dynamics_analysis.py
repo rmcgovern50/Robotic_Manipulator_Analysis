@@ -309,11 +309,11 @@ class path_dynamics():
         x_val = [x[0] for x in admissable_region]
         y_val = [x[1] for x in admissable_region]
         
-        plt.plot(x_val,y_val,'or',ms=marker_size)
+        fig = plt.plot(x_val,y_val,'or',ms=marker_size)
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
         
         #plt.show()
         
-        return plt
+        return fig, plt
     

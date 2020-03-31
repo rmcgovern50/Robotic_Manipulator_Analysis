@@ -9,6 +9,7 @@ from math import sqrt
 import numpy as np
 import matplotlib.pyplot as plt
 from my_math import fit_curve, intersection
+from my_visualising import add_to_plot
 
 class path_dynamics_controller():
     """
@@ -69,18 +70,38 @@ class path_dynamics_controller():
         #1 backward integrate sdd = -L
         
         #perform the backward integration first from final position
-        seg1 = self.integrate_motion(final, bounds, 'backwards')
-        x, p1 = fit_curve(seg1)
-        plt.plot(x,p1)
+        seg2 = self.integrate_motion(final, bounds, 'backwards')
+        seg2.reverse()
+        
+        
+        #x, p1 = fit_curve(seg1)
+        #plt.plot(x,p1)
 
         #2 forward integrate sdd == +U
         
-        seg2 = self.integrate_motion(initial, bounds, 'forwards')
+        seg1 = self.integrate_motion(initial, bounds, 'forwards')
         
-        #intersection_point = self.find_intersections(seg1, seg2)
+        intersection_point = self.find_intersections(seg1, seg2)
+        #print(intersection_point)
+        add_to_plot(plt, intersection_point)
         
-        x, p2 = fit_curve(seg2)
-        plt.plot(x,p2)
+        #print(seg1)
+        
+        #print("=====================")
+        
+        #print(seg2)
+        
+        all_segs = [seg1, seg2]
+        
+        #print(all_segs)
+        
+        trajectory = self.connect_trajectories(all_segs, intersection_point)
+        
+        
+        
+        
+        #x, p2 = fit_curve(seg2)
+        #plt.plot(x,p2)
         """
         #print(seg1)
         x_val = [x[0] for x in seg2]
@@ -120,7 +141,7 @@ class path_dynamics_controller():
         
         #trajectory = 1
         print("we got the controller designed")
-        trajectory = seg1 +seg2
+        #trajectory = seg1 +seg2
         return trajectory
         
     def find_intersections(self, seg1, seg2):
@@ -143,13 +164,13 @@ class path_dynamics_controller():
         
             while(j < len(seg2)):
                 
-                #seperation = sqrt((seg1[i][0] - seg2[j][0])**2 + (seg1[i][1] - seg2[j][1])**2)
+                seperation = sqrt((seg1[i][0] - seg2[j][0])**2 + (seg1[i][1] - seg2[j][1])**2)
                 
                 
                 if seperation < 0.05:
                                     
                     if len(seg1_section) == 0:
-                        seperation_list = seperation
+                        seperation_list = [seperation]
                         seg1_section = [seg1[i]]
                         seg2_section = [seg2[j]]
                         
@@ -160,16 +181,17 @@ class path_dynamics_controller():
 
                     #print(seperation, seg1[i], seg2[j])
             
-                j = j + 10
+                j = j + 1
             
             
             j = 0
-            i = i + 10
+            i = i + 1
 
 
-        val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
+        #val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
+        index_min = np.argmin(seperation_list)#get the closest points
         
-        print(val, idx)
+        #print(val, idx)
         #print(seg1_section)
         #print("ewfbiuewrbgerbiuogrvb")
         #print(seg2_section)
@@ -186,8 +208,51 @@ class path_dynamics_controller():
         #plt.plot(point, 'or',ms=10)
         
         #plt.show()
-        return 1
+        return [seg1_section[index_min]]
 
+    def connect_trajectories(self, segs, intersection):
+        """
+        This method takes in a few different segments and an intersection point
+        
+        return
+            trajectory - [(s1,sd1), ... , (sn, sdn) ]
+        
+        """
+        print(intersection)
+        
+        i = 0
+        j = 0
+        trajectory = []
+        not_finished = True
+        
+        while(not_finished):
+            
+            if len(trajectory) == 0:
+                trajectory = [segs[j][i]]          
+            else:
+                trajectory.append(segs[j][i])   
+            
+            
+            i = i + 1
+                        
+            #if we pass the intersection point
+            if j == 0:
+                if segs[j][i][0] >  intersection[0][0]:
+                    j = j + 1 
+                    i = 0
+                    #increment i until interse4ction point
+                    while segs[j][i][0] <  intersection[0][0]:
+                        i = i + 1
+                        
+            
+            print(i, j, segs[j][i][0])
+            if segs[j][i][0] == 1:
+                not_finished = False
+                    
+                    
+                    
+        
+        return trajectory
 
 
     def integrate_motion(self, pos, bounds, direction='backwards'):

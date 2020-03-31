@@ -341,7 +341,7 @@ class revolute_prismatic(path_dynamics, pdc):
         #calculate admissable region
         admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
 
-        plot = self.generate_state_space_plot(admissable_region, 1)
+        fig, plot = self.generate_state_space_plot(admissable_region, 1)
         #plot.show()
    
     
@@ -351,8 +351,9 @@ class revolute_prismatic(path_dynamics, pdc):
         trajectory = self.simple_time_optimal_controller((0,0), (1,0), self.bounds)
         
         add_to_plot(plot, trajectory,1)
-        plot.show()
-        
+        #plot.show()
+        #fig = plt.figure(figsize=(3, 6))
+        plot.savefig('temp.png')
         
         #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
         #print(tangent_cone_components)
