@@ -80,9 +80,9 @@ class path_dynamics_controller():
         #print(type(x_val), type(n))
         y_val = np.array(y_val ,dtype=float)
         n = np.linspace(0, 1, 100)
-        z = np.polyfit(x_val,y_val,5)
-        p = np.poly1d(z)
-        plt.plot(n, p(n))
+        z = np.polyfit(x_val,y_val,1)
+        p1 = np.poly1d(z)
+        plt.plot(n, p1(n))
         #print(type(p), p)
         
         #2 forward integrate sdd == +U
@@ -98,11 +98,19 @@ class path_dynamics_controller():
         #print(type(x_val), type(n))
         y_val = np.array(y_val ,dtype=float)
         n = np.linspace(0, 1, 100)
-        z = np.polyfit(x_val,y_val,5)
-        p = np.poly1d(z)
-        plt.plot(n, p(n))
+        z = np.polyfit(x_val,y_val,1)
+        p2 = np.poly1d(z)
+        plt.plot(n, p2(n))
         
+        r = np.roots(p1-p2)
+        e = np.polyval(p2, r)
+        #print(r, e)
+        intersection = (r[0], e[0])
+        print(intersection)
+        plt.plot(intersection[0], intersection[1], 'or',ms=10)
+        plt.show()
         
+        #plot
         
         #3 backstep until tangent found sdd == -L
 

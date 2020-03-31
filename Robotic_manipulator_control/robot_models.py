@@ -350,8 +350,8 @@ class revolute_prismatic(path_dynamics, pdc):
         
         trajectory = self.simple_time_optimal_controller((0,0), (1,0), self.bounds)
         
-        add_to_plot(plot, trajectory,5)
-        plot.show()
+        #add_to_plot(plot, trajectory,5)
+        #plot.show()
         
         
         #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
