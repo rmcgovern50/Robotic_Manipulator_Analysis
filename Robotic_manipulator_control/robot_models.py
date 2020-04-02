@@ -6,24 +6,19 @@ These are all child classes the the path_dynamics_analysis class which helps to
 visualise the state space in a general way
 """
 
-from sympy import symbols, Matrix, sin, cos, diff, Abs, Subs
-from my_sorting import combine_to_tuples
+from sympy import symbols, Matrix, sin, cos
+
 
 from path_dynamics_analysis import path_dynamics as pd
 from path_dynamics_control import path_dynamics_controller as pdc
 
 import math as m
-from matplotlib import pyplot
-from my_visualising import simple_polar_plot, simple_plot, add_to_plot
 
-import sys
-sys.path.append('../My_modules/my_basic_modules') #just incase I want to import some modules
-sys.path.append('../My_modules/my_control_modules') #just incase I want to import some modules
 #from my_visualising import simple_plot
 import my_visualising as mv
+import my_sorting as ms
 
-
-
+import matplotlib.pyplot as plt
 
 class revolute_prismatic(pd, pdc):
     pass
@@ -56,7 +51,7 @@ class revolute_prismatic(pd, pdc):
         #list that is of the form that allows easy substitution of robot parameters.
         symbols_to_sub = [self.m, self.u1min, self.u1max, self.u2min, self.u2max]
         values_to_sub = [end_effector_mass, joint_limits[0][0], joint_limits[0][1], joint_limits[1][0], joint_limits[1][1]]
-        constants_to_sub = combine_to_tuples(symbols_to_sub, values_to_sub)
+        constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
         super(revolute_prismatic, self).__init__(constants_to_sub)
@@ -292,7 +287,7 @@ class revolute_prismatic(pd, pdc):
             simple_plot(coordinates, 'q1', 'q2', 1)
     
 
-    def Run_path_dynamics(self, path_straight_line, s_lims, sd_lims):
+    def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
         """
         Description-
             This is a method that uses many of the existing methods in this class
@@ -332,46 +327,39 @@ class revolute_prismatic(pd, pdc):
         #calculate bounds based on the path dynamics
         self.bounds = pd.calc_bounds(self, Ms, Cs, gs)
         #print(bounds)
+                #define grid
+        #s_lim = [0, 1, 0.1]
+        #sd_lim = [0,10, 0.1]
+        self.admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lims, sd_lims)
 
+        
+        #pd.generate_state_space_plot(self, self.admissable_region)
+        
         #get big list of tangent cones corresponding to ead point in the state space 
-
+        
 
         #tangent_cone = f(s, sd)
-    def generate_time_optimal_trajectory(self):
+    def generate_time_optimal_trajectory(self, plot_trajectory=False):
         """
         method to take steps neccesary to design a time opeitmal control trajectory
         
         return:
             trajectory - [(s1, sd1),...,(sn,sdn) ]
         """
-    
-        #define grid
-        s_lim = [0, 1, 0.1]
-        sd_lim = [0,10, 0.1]
-        
-        #calculate admissable region
-        admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
 
-        fig, plot = pd.generate_state_space_plot(self, admissable_region, 1)
+        #calculate admissable region
+        #admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
+
+        #plot = pd.generate_state_space_plot(self, self.admissable_region, 1)
         #plot.show()
    
-    
-
         
+        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, (0,0), (1,0), self.bounds)
         
-        trajectory = pdc.simple_time_optimal_controller(self, (0,0), (1,0), self.bounds)
+        if plot_trajectory==True:
+            pd.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, 1, 1)
+            
         
-        mv.add_to_plot(plot, trajectory,1)
-        #plot.show()
-        #fig = plt.figure(figsize=(3, 6))
-        plot.savefig('trajectory.png')
-        
-        #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
-        #print(tangent_cone_components)
-        
-        
-        print("design controller here")
-
         return trajectory
             
       

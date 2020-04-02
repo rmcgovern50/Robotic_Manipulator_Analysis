@@ -150,7 +150,7 @@ def intersection(p1, p2):
         
         
 #enable to test anything
-if __name__ == "__main__": 
+#if __name__ == "__main__": 
     
     
     """

@@ -44,9 +44,6 @@ def add_to_plot(plot, tuple_list, marker_size=10, mfc='blue', show=0):
     return plot
 
 
-def save_figure(fig, save_path):
-    pass
-    
     
 
 

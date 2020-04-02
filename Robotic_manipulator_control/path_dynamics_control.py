@@ -81,9 +81,9 @@ class path_dynamics_controller():
         
         seg1 = self.integrate_motion(initial, bounds, 'forwards')
         
-        intersection_point = self.find_intersections(seg1, seg2)
+        intersection_point = self.find_intersections(seg1, seg2, self.step_size)
         #print(intersection_point)
-        add_to_plot(plt, intersection_point)
+        #add_to_plot(plt, intersection_point)
         
         #print(seg1)
         
@@ -142,9 +142,9 @@ class path_dynamics_controller():
         #trajectory = 1
         #print("we got the controller designed")
         #trajectory = seg1 +seg2
-        return trajectory
+        return trajectory, intersection_point
         
-    def find_intersections(self, seg1, seg2):
+    def find_intersections(self, seg1, seg2, step_size):
         """
         this method takes in two lists of points and decides if they intersect
         Arguments:
@@ -152,6 +152,7 @@ class path_dynamics_controller():
         return:
                         
         """
+        c = 5 #varioble to tue intersection speration
         
         i = 0
         j = 0
@@ -167,7 +168,7 @@ class path_dynamics_controller():
                 seperation = sqrt((seg1[i][0] - seg2[j][0])**2 + (seg1[i][1] - seg2[j][1])**2)
                 
                 
-                if seperation < 0.05:
+                if seperation < c*step_size:
                                     
                     if len(seg1_section) == 0:
                         seperation_list = [seperation]
@@ -180,7 +181,7 @@ class path_dynamics_controller():
                         seg2_section.append(seg2[j])
 
                     #print(seperation, seg1[i], seg2[j])
-            
+                
                 j = j + 1
             
             
@@ -189,8 +190,11 @@ class path_dynamics_controller():
 
 
         #val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
-        index_min = np.argmin(seperation_list)#get the closest points
-        
+        try:
+            index_min = np.argmin(seperation_list)#get the closest points
+        except:
+            raise Exception("lines do not intersect")
+            
         #print(val, idx)
         #print(seg1_section)
         #print("ewfbiuewrbgerbiuogrvb")
@@ -266,10 +270,11 @@ class path_dynamics_controller():
         return -
             trajectory - [(s1,sd1), ... , (sn, sdn) ]
         """
-        c = 0.1        
+   
         current_pos = pos
         trajectory = [current_pos]
-        step_size = 0.01
+        self.step_size = 0.02
+        step_size = self.step_size
         i = 0
         
 

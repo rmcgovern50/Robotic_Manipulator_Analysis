@@ -3,9 +3,9 @@ This is a class that will allow path dynamics to be analysed
 
 """
 
-from my_math import sub_into_matrix
-from sympy import symbols, Matrix, diff
+import my_math as mm# import sub_into_matrix
 import matplotlib.pyplot as plt
+from sympy import Matrix, diff
 
 
 class path_dynamics():
@@ -31,17 +31,17 @@ class path_dynamics():
         return - dynamics matrices in terms of s 
         """
         
-        M_explicit = sub_into_matrix(self.M, self.constants_to_sub) 
-        C_explicit = sub_into_matrix(self.C, self.constants_to_sub)
-        g_explicit = sub_into_matrix(self.g, self.constants_to_sub)
+        M_explicit = mm.sub_into_matrix(self.M, self.constants_to_sub) 
+        C_explicit = mm.sub_into_matrix(self.C, self.constants_to_sub)
+        g_explicit = mm.sub_into_matrix(self.g, self.constants_to_sub)
         
         values_to_sub = [(self.q1, list(qs)[0]),(self.q2, list(qs)[1]), \
                          (self.q1d, list(qsd)[0]),(self.q2d, list(qsd)[1]),\
                          (self.q1dd, list(qsdd)[0]),(self.q2dd, list(qsdd)[1])]
         #print(values_to_sub)
-        Mqs = sub_into_matrix(M_explicit, values_to_sub)
-        Cqs = sub_into_matrix(C_explicit, values_to_sub)
-        gqs = sub_into_matrix(g_explicit, values_to_sub)
+        Mqs = mm.sub_into_matrix(M_explicit, values_to_sub)
+        Cqs = mm.sub_into_matrix(C_explicit, values_to_sub)
+        gqs = mm.sub_into_matrix(g_explicit, values_to_sub)
         
         return Mqs, Cqs, gqs
 
@@ -303,18 +303,76 @@ class path_dynamics():
         Arguments:
             admissable_region [(s1,sd1), (s2,sd2), ... ,(sn,sdn)]
             
-        return:
-            plt- the plot so that other operations can be superimosed on it later
         """
         
         x_val = [x[0] for x in admissable_region]
         y_val = [x[1] for x in admissable_region]
         
-        fig = plt.plot(x_val,y_val,'or',ms=marker_size)
+        fig = plt.figure()
+        ax1 = plt.subplot2grid((1,1),(0,0))
+        
+        ax1.plot(x_val,y_val,'or',ms=marker_size)
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
         
-        #plt.show()
-        
-        return fig, plt
+
     
+
+    def generate_control_algorithm_plot(self, admissable_region, \
+                                        control_trajectory, switching_points, \
+                                        marker_size=1, save=0, filepath="temp.png" ):
+        """
+        this function simply takes in two lists of tuples and plots them
+        Arguments:
+            admissable_region [(s1,sd1), (s2,sd2), ... ,(sn,sdn)]
+            admissable_region [(s1,sd1), (s2,sd2), ... ,(sn,sdn)]
+
+        """
+
+
+
+        x1_val = [x[0] for x in admissable_region]
+        y1_val = [x[1] for x in admissable_region]
+        
+        x2_val = [x[0] for x in control_trajectory]
+        y2_val = [x[1] for x in control_trajectory]
+        
+        x3_val = [x[0] for x in switching_points]
+        y3_val = [x[1] for x in switching_points]
+        
+        fig = plt.figure()
+        
+        plt.plot(x1_val, y1_val, 'or',ms=marker_size, color='r', label='admissable region')
+        plt.plot(x2_val, y2_val, 'or',ms=2*marker_size, color='b', label='controlled trajectory' )
+        plt.plot(x3_val, y3_val, 'or',ms=10*marker_size, color='c', label='switching points')
+        
+        plt.title("Plot of robot trajectory through admissable region")
+        plt.legend()
+        plt.xlabel("s")
+        plt.ylabel("$\dot{s}$")
+        if save == 1:
+            fig.savefig(filepath)
+        else:
+            plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
