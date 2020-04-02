@@ -8,13 +8,24 @@ visualise the state space in a general way
 
 from sympy import symbols, Matrix, sin, cos, diff, Abs, Subs
 from my_sorting import combine_to_tuples
-from path_dynamics_analysis import path_dynamics
+
+from path_dynamics_analysis import path_dynamics as pd
 from path_dynamics_control import path_dynamics_controller as pdc
+
 import math as m
 from matplotlib import pyplot
 from my_visualising import simple_polar_plot, simple_plot, add_to_plot
 
-class revolute_prismatic(path_dynamics, pdc):
+import sys
+sys.path.append('../My_modules/my_basic_modules') #just incase I want to import some modules
+sys.path.append('../My_modules/my_control_modules') #just incase I want to import some modules
+#from my_visualising import simple_plot
+import my_visualising as mv
+
+
+
+
+class revolute_prismatic(pd, pdc):
     pass
     """
     This class is for the case specific parts of revolute slide robot
@@ -307,19 +318,19 @@ class revolute_prismatic(path_dynamics, pdc):
         
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
         
-        q, qd,qdd, dqds, d2qds2  = self.path_parameterisation(qs)
+        q, qd,qdd, dqds, d2qds2  = pd.path_parameterisation(self, qs)
         #print(q, qd,qdd, dqds, d2qds2)
 
         #get all the necessary matrices in terms of the parameterised matrices
-        Mqs, Cqs, gqs = self.calc_qs_matrices(q, qd, qdd)
+        Mqs, Cqs, gqs = pd.calc_qs_matrices(self, q, qd, qdd)
         #print(Mqs, Cqs, gqs)
         
         #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
-        Ms, Cs, gs = self.calc_s_matrices(Mqs, Cqs, gqs, dqds, d2qds2)
+        Ms, Cs, gs = pd.calc_s_matrices(self, Mqs, Cqs, gqs, dqds, d2qds2)
         #print(Ms, Cs, gs)
         
         #calculate bounds based on the path dynamics
-        self.bounds = self.calc_bounds(Ms, Cs, gs)
+        self.bounds = pd.calc_bounds(self, Ms, Cs, gs)
         #print(bounds)
 
         #get big list of tangent cones corresponding to ead point in the state space 
@@ -341,19 +352,19 @@ class revolute_prismatic(path_dynamics, pdc):
         #calculate admissable region
         admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
 
-        fig, plot = self.generate_state_space_plot(admissable_region, 1)
+        fig, plot = pd.generate_state_space_plot(self, admissable_region, 1)
         #plot.show()
    
     
 
         
         
-        trajectory = self.simple_time_optimal_controller((0,0), (1,0), self.bounds)
+        trajectory = pdc.simple_time_optimal_controller(self, (0,0), (1,0), self.bounds)
         
-        add_to_plot(plot, trajectory,1)
+        mv.add_to_plot(plot, trajectory,1)
         #plot.show()
         #fig = plt.figure(figsize=(3, 6))
-        plot.savefig('temp.png')
+        plot.savefig('trajectory.png')
         
         #tangent_cone_components = control.generate_tangent_cone_components(self.bounds, s_lim, sd_lim)
         #print(tangent_cone_components)
@@ -364,11 +375,6 @@ class revolute_prismatic(path_dynamics, pdc):
         return trajectory
             
       
-        
-    
-    
-    
-    
     
     
     
@@ -412,7 +418,7 @@ class revolute_prismatic(path_dynamics, pdc):
 #==============================================================================
             
 
-class cartesian_robot(path_dynamics):
+class cartesian_robot(pd):
     """
     This class is for the case specific parts of cartesian robot
     The path_dynamics analysis class will use the information here to

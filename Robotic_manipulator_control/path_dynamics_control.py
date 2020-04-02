@@ -140,7 +140,7 @@ class path_dynamics_controller():
         
         
         #trajectory = 1
-        print("we got the controller designed")
+        #print("we got the controller designed")
         #trajectory = seg1 +seg2
         return trajectory
         
@@ -245,7 +245,7 @@ class path_dynamics_controller():
                         i = i + 1
                         
             
-            print(i, j, segs[j][i][0])
+            #print(i, j, segs[j][i][0])
             if segs[j][i][0] == 1:
                 not_finished = False
                     

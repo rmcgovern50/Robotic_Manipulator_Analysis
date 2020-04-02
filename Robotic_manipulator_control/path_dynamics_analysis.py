@@ -2,6 +2,7 @@
 This is a class that will allow path dynamics to be analysed
 
 """
+
 from my_math import sub_into_matrix
 from sympy import symbols, Matrix, diff
 import matplotlib.pyplot as plt

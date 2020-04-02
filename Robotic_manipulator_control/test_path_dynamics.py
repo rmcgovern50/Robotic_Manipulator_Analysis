@@ -8,10 +8,7 @@ This script will use my model of arobot to calculate the dynamics
 on a path and plot the admissable and inadmissable regions
 """
 
-import sys
-sys.path.append('../My_modules/my_basic_modules') #just incase I want to import some modules
-sys.path.append('../My_modules/my_control_modules') #just incase I want to import some modules
-from my_visualising import simple_plot
+
 from robot_models import revolute_prismatic
 
 
