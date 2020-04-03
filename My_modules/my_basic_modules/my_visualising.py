@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sympy import pprint
 
 
-def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
+def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10, show_plot=1):
     """
     this function simply takes in a list of tuples and plots them
     Arguments:
@@ -23,7 +23,8 @@ def simple_plot(tuple_list, xaxislabel = 'x', yaxislabel = 'y', marker_size=10):
     plt.plot(x_val,y_val,'or',ms=marker_size)
     plt.xlabel(xaxislabel)
     plt.ylabel(yaxislabel)
-    plt.show()
+    if show_plot == 1:
+        plt.show()
 
 
 def add_to_plot(plot, tuple_list, marker_size=10, mfc='blue', show=0):

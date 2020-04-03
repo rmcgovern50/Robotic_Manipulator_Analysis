@@ -314,7 +314,7 @@ class path_dynamics():
         ax1.plot(x_val,y_val,'or',ms=marker_size)
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
-        
+        plt.show()
 
     
 
