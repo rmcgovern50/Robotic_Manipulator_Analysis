@@ -22,13 +22,13 @@ def test_plot_state_space():
     #Specify robot parameters
 
     #instatiate class with the physical parameters
-    manipulator = two_dof_planar_prismatic([0.1, 0.1], [0.2,0.2], [(-1,1), (-1,1)])
+    manipulator = two_dof_planar_prismatic([0.2, 0.2], [0.2,0.2], [(-1,1), (-1,1)])
     #manipulator.check_if_dynamics_valid()
     
     #efine the starting and ending angles
     q1_start = m.radians(90)
     q2_start = m.radians(90)
-    q1_end = m.radians(-50)
+    q1_end = m.radians(50)
     q2_end = m.radians(-25)
     
     starting_joints = (q1_start, q2_start)
@@ -43,16 +43,12 @@ def test_plot_state_space():
     
     manipulator.run_full_path_dynamics_analysis(straight_line_definition, s_lim, sd_lim)
     
-    #manipulator.generate_state_space_plot(manipulator.admissable_region)
+    manipulator.generate_state_space_plot(manipulator.admissable_region, False)
     manipulator.simulate_trajectory(manipulator.qs,0.1,1,1,1,1, True)
     
     trajectory = manipulator.generate_time_optimal_trajectory(True)
 
 
-
-
-
-    
         
 if __name__ == "__main__": 
 

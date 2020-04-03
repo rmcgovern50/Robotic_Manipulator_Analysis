@@ -11,9 +11,10 @@ from sympy import symbols, Matrix, sin, cos, pprint
 
 from path_dynamics_analysis import path_dynamics as pd
 from path_dynamics_control import path_dynamics_controller as pdc
+from robot_data_visualisation import robot_data_visualisation as rdv
 
 import math as m
-import numpy as np
+
 
 #from my_visualising import simple_plot
 import my_visualising as mv
@@ -22,7 +23,7 @@ import my_sorting as ms
 import matplotlib.pyplot as plt
 
 
-class two_dof_planar_prismatic(pd, pdc):
+class two_dof_planar_prismatic(pd, pdc, rdv):
     pass
     """
     This class is for the case specific parts of revolute slide robot
@@ -274,130 +275,22 @@ class two_dof_planar_prismatic(pd, pdc):
             s = s + increment
             i = i + 1
         #print(coordinates)
-        
+
+
         if plot_q1_against_s == 1:
-            
-            self.plot_q1_against_s(s_axisq1, save)
+            rdv.plot_q1_against_s(self, s_axisq1, save)
 
         if plot_q2_against_s == 1:
-            self.plot_q2_against_s(s_axisq2, save)
+            rdv.plot_q2_against_s(self, s_axisq2, save)
             
         if plot_q1_against_q2 == 1:
-            self.plot_q1_against_q2(coordinates, save)
-        if plot_end_effector_x_y == 1:
+            rdv.plot_q1_against_q2(self, coordinates, save)
             
-            self.plot_end_effector_x_y(x_y_coordinates, s_axisq1, save)
+        if plot_end_effector_x_y == 1:
+            rdv.plot_end_effector_x_y(self, x_y_coordinates, s_axisq1, save)
             
  
-            
-    def plot_q1_against_s(self, s_axisq1, save):
-        
-            x_val = [x[0] for x in s_axisq1]
-            y_val = [x[1] for x in s_axisq1]
 
-            y_val = np.rad2deg(np.array(y_val, dtype=np.float32))
-        
-            fig = plt.figure()
-            plt.plot(x_val, y_val,'or',ms=5)
-            
-            plt.grid(color='black', linestyle='-', linewidth=0.5)
-            plt.title("Angle of q1 vs s")
-            plt.xlabel("s")
-            plt.ylabel("q1 (degrees)")
-            if save == True:
-                fig.savefig("plots/q1 vs s.png")
-            else:
-                plt.show()
-    
-    def plot_q2_against_s(self, s_axisq2, save):
-            x_val = [x[0] for x in s_axisq2]
-            y_val = [x[1] for x in s_axisq2]
-            
-            y_val = np.rad2deg(np.asarray(y_val, dtype=np.float32))
-            
-            fig = plt.figure()
-            plt.plot(x_val,y_val,'or',ms=5)
-            
-            plt.grid(color='black', linestyle='-', linewidth=0.5)
-            plt.title("Angle of q2 vs s")
-            plt.xlabel("s")
-            plt.ylabel("q2 (degrees)")
-            if save == True:
-                fig.savefig("plots/q2 vs s.png")
-            else:
-                plt.show() 
-            
-    def plot_q1_against_q2(self, coordinates, save):
-            x_val = [x[0] for x in coordinates]
-            y_val = [x[1] for x in coordinates]
-            
-            x_val = np.rad2deg(np.asarray(x_val, dtype=np.float32))
-            y_val = np.rad2deg(np.asarray(y_val, dtype=np.float32))
-            
-            fig = plt.figure()
-            plt.plot(x_val,y_val,'or',ms=5)
-            plt.grid(color='black', linestyle='-', linewidth=0.5)
-            plt.title("Angle of q1 vs angle of q2")
-            plt.xlabel("q1 (degrees)")
-            plt.ylabel("q2 (degrees)")
-            if save == True:
-                fig.savefig("plots/q1 vs q2.png")
-            else:
-                plt.show()
-        
-        
-    def plot_end_effector_x_y(self, x_y_coordinates, s_axisq1, save):
-           
-            x_val = [x[0] for x in x_y_coordinates]
-            y_val = [x[1] for x in x_y_coordinates]
-            
-            fig = plt.figure()
-            plt.plot(x_val,y_val,'or', color='orange', ms=5, label="end effector")
-            i = 0
-            
-            
-            q1 = [x[1] for x in s_axisq1]
-            for x in x_val:
-                if i == 0:
-                    #attach labels on the first loop
-                    plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
-                              [self.link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g', label="links")
-                    
-                    plt.plot([0, self.link_lengths[0]*m.cos(q1[i])],\
-                              [0, self.link_lengths[0]*m.sin(q1[i])], '-', color='g')
-                    
-                    plt.plot(self.link_lengths[0]*m.cos(q1[i]),\
-                              self.link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2, label="joint")
-                else:
-                    
-                    plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
-                              [self.link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g')
-                    
-                    plt.plot([0, self.link_lengths[0]*m.cos(q1[i])],\
-                              [0, self.link_lengths[0]*m.sin(q1[i])], '-', color='g')
-                    
-                    plt.plot(self.link_lengths[0]*m.cos(q1[i]),\
-                              self.link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2)
-                i = i + 1
-                
-            plt.grid(color='black', linestyle='-', linewidth=0.5)
-            plt.legend()
-            
-            
-            #scale axis
-            max_extension = self.link_lengths[0] + self.link_lengths[1] + 0.2
-            plt.xlim(right=max_extension) #xmax is your value
-            plt.xlim(left=-max_extension) #xmin is your value
-            plt.ylim(top=max_extension) #ymax is your value
-            plt.ylim(bottom=-max_extension) #ymin is your value
-            
-            plt.title("Workspace_trajectory")
-            plt.xlabel("x (metres)")
-            plt.ylabel("y (metres)")
-            if save == True:
-                fig.savefig("plots/workspace.png")
-            else:
-                plt.show()      
         
         
     def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
@@ -470,7 +363,7 @@ class two_dof_planar_prismatic(pd, pdc):
         trajectory, intersection_point = pdc.simple_time_optimal_controller(self, (0,0), (1,0), self.bounds)
         
         if plot_trajectory==True:
-            pd.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, 1, 1)
+            rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, 1, 1)
             
         
         return trajectory
