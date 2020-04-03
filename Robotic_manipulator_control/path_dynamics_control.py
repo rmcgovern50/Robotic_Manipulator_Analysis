@@ -66,11 +66,11 @@ class path_dynamics_controller():
                 (these can readily be used to calculater the neccessary  actuator torques)
         """
         
-        
+        step_size = 0.1
         #1 backward integrate sdd = -L
         
         #perform the backward integration first from final position
-        seg2 = self.integrate_motion(final, bounds, 'backwards')
+        seg2 = self.integrate_motion(final, bounds, step_size, 'backwards' )
         seg2.reverse()
         
         
@@ -79,17 +79,9 @@ class path_dynamics_controller():
 
         #2 forward integrate sdd == +U
         
-        seg1 = self.integrate_motion(initial, bounds, 'forwards')
+        seg1 = self.integrate_motion(initial, bounds, step_size, 'forwards')
         
-        intersection_point = self.find_intersections(seg1, seg2, self.step_size)
-        #print(intersection_point)
-        #add_to_plot(plt, intersection_point)
-        
-        #print(seg1)
-        
-        #print("=====================")
-        
-        #print(seg2)
+        intersection_point = self.find_intersections(seg1, seg2, step_size)
         
         all_segs = [seg1, seg2]
         
@@ -259,7 +251,7 @@ class path_dynamics_controller():
         return trajectory
 
 
-    def integrate_motion(self, pos, bounds, direction='backwards'):
+    def integrate_motion(self, pos, bounds, step_size, direction='backwards'):
         """
         Arguments:
             start_coordinate - (x, y)
@@ -273,8 +265,6 @@ class path_dynamics_controller():
    
         current_pos = pos
         trajectory = [current_pos]
-        self.step_size = 0.02
-        step_size = self.step_size
         i = 0
         
 
