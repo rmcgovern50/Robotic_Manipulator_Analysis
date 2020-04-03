@@ -214,7 +214,7 @@ class path_dynamics_controller():
             trajectory - [(s1,sd1), ... , (sn, sdn) ]
         
         """
-        print(intersection)
+        #print(intersection)
         
         i = 0
         j = 0

@@ -320,7 +320,7 @@ class path_dynamics():
 
     def generate_control_algorithm_plot(self, admissable_region, \
                                         control_trajectory, switching_points, \
-                                        marker_size=1, save=0, filepath="temp.png" ):
+                                        marker_size=1, save=0, filepath="s_sdot_plane.png" ):
         """
         this function simply takes in two lists of tuples and plots them
         Arguments:
@@ -351,7 +351,7 @@ class path_dynamics():
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
         if save == 1:
-            fig.savefig(filepath)
+            fig.savefig("plots/"+filepath)
         else:
             plt.show()
 
