@@ -6,12 +6,12 @@ These are all child classes the the path_dynamics_analysis class which helps to
 visualise the state space in a general way
 """
 
-from sympy import symbols, Matrix, sin, cos, pprint
+from sympy import symbols, Matrix, sin, cos, acos, asin, atan2, sqrt, pprint
 
 
 from path_dynamics_analysis import path_dynamics as pd
 from path_dynamics_control import path_dynamics_controller as pdc
-from robot_data_visualisation import robot_data_visualisation as rdv
+from robot_data_visualisation import two_dof_robot_data_visualisation as rdv
 
 import math as m
 
@@ -19,6 +19,7 @@ import math as m
 #from my_visualising import simple_plot
 import my_visualising as mv
 import my_sorting as ms
+import png_to_gif
 
 import matplotlib.pyplot as plt
 
@@ -184,6 +185,38 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         joint_positions = [q1,q2]
         return joint_positions
     
+    
+    def symbolic_inverse_kinematics(self, pose, return_degrees=0):
+        """
+        Arguments:
+            function takes in end effector pose
+            pose = [x, y]
+            return_degrees if set to 1 returns q1 as degrees instead of radians
+        (model taken from park, modern robotics page 220)
+            
+        return:
+            joint positions as
+            joint_positions = [q1, q2]
+            where q1 is in radians, q2 in length units
+        """
+        L1 = self.link_lengths[0]
+        L2 = self.link_lengths[1]
+        x = pose[0]
+        y= pose[1]
+
+        beta = acos((L1**2+L2**2-x**2-y**2)/(2*L1*L2))
+        alpha = acos((x**2+y**2+L1**2-L2**2)/(2*L1*sqrt(x**2+y**2)))
+        gamma = atan2(y,x)
+            
+        q1 = gamma - alpha
+        q2 = m.pi - beta
+    
+    
+    
+        joint_positions = [q1,q2]
+        return joint_positions
+    
+    
     def straight_line_parameterisation(self, start, end):
         """
         Arguments:
@@ -194,28 +227,27 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
             qs = [q1(s), q2(s)]
             
         Description:
-        Function works by taking in two points in the cartesian space
-        the equation of a straight line is:
-            y = mx + c in cartesian space
-        This is a plar manipulator so we can define the following transormation for any point in space
-        y = q2sinq1
-        x = q2cosq1
-        
-        so a line can be defined as:
+            X(s) = Xstart + s*(Xend - Xstart)
+               where X(s) = [x, y] = [xstart + s*(xend - xstart), ystart + s*(yend - ystart)  
             
-        q2*cosq1 = q2*m*sinq1 + c
-        or:
-        q2 = c/(cosq1 - msinq1)
-        
-        WARNING, this equation will only work correctly first quadrant:
-            -
-        as 
-        
         """
+        xstart = start[0]
+        xend = end[0]
+        ystart = start[1]
+        yend = end[1]
+        
+        xs = xstart + self.s*(xend - xstart)
+        ys = ystart + self.s*(yend - ystart)
+        
+        Xs = [xs, ys]
+        qs = self.symbolic_inverse_kinematics(Xs)
+        
 
         #get m
-        pass
-        #return qs
+        #print("")
+        
+        #qs = q1s, q2s
+        return qs
         
         
     def joint_space_straight_line(self, start, end):
@@ -236,10 +268,7 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         #print(qs)
         return qs
         
-    def simulate_trajectory(self, qs, increment=0.1,\
-                                     plot_q1_against_s=0, plot_q2_against_s=0,\
-                                     plot_q1_against_q2=0, plot_end_effector_x_y=0,\
-                                     save=False):
+    def simulate_trajectory(self, qs, increment=0.1):
         """
         Arguments:
             qs - list of parameterised trajectories
@@ -257,40 +286,64 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         i = 0
         while(s < 1):
             if s == 0:
-                coordinates = [(qs[0].subs([(self.s, s)]), qs[1].subs([(self.s, s)]))]
+                self.coordinates_q1_q2 = [(qs[0].subs([(self.s, s)]), qs[1].subs([(self.s, s)]))]
                 #print(coordinates)
-                x_y = self.forward_kinematics([coordinates[0][0],coordinates[0][1]])
-                x_y_coordinates = [(x_y[0], x_y[1])]
+                x_y = self.forward_kinematics([self.coordinates_q1_q2[0][0],self.coordinates_q1_q2[0][1]])
+                self.x_y_coordinates = [(x_y[0], x_y[1])]
                 
-                s_axisq1 = [(s, qs[0].subs([(self.s, s)]))]
-                s_axisq2 = [(s, qs[1].subs([(self.s, s)]),s)]
+                self.s_axisq1 = [(s, qs[0].subs([(self.s, s)]))]
+                self.s_axisq2 = [(s, qs[1].subs([(self.s, s)]),s)]
             else:
-                coordinates.append((qs[0].subs([(self.s, s)]), qs[1].subs([(self.s, s)])))
+                self.coordinates_q1_q2.append((qs[0].subs([(self.s, s)]), qs[1].subs([(self.s, s)])))
                 #print(coordinates)
-                x_y = self.forward_kinematics([coordinates[i][0],coordinates[i][1]])
-                x_y_coordinates.append((x_y[0], x_y[1]))
+                x_y = self.forward_kinematics([self.coordinates_q1_q2[i][0],self.coordinates_q1_q2[i][1]])
+                self.x_y_coordinates.append((x_y[0], x_y[1]))
                 
-                s_axisq1.append((s, qs[0].subs([(self.s, s)])))
-                s_axisq2.append((s, qs[1].subs([(self.s, s)])))
+                self.s_axisq1.append((s, qs[0].subs([(self.s, s)])))
+                self.s_axisq2.append((s, qs[1].subs([(self.s, s)])))
             s = s + increment
             i = i + 1
-        #print(coordinates)
 
+
+
+    def plot_simulation_parameters(self,
+                                     plot_q1_against_s=0,\
+                                     plot_q2_against_s=0,\
+                                     plot_q1_against_q2=0,\
+                                     plot_motion_x_y=0,\
+                                     plot_end_effector_motion=0,\
+                                     make_robot_motion_gif=[0, 50, "robot_motion"],\
+                                     sub_plot_plot_q1_against_q2_and_motion_x_y =0,\
+                                     save=False):
 
         if plot_q1_against_s == 1:
-            rdv.plot_q1_against_s(self, s_axisq1, save)
+            rdv.plot_q1_against_s(self, self.s_axisq1, save)
 
         if plot_q2_against_s == 1:
-            rdv.plot_q2_against_s(self, s_axisq2, save)
+            rdv.plot_q2_against_s(self, self.s_axisq2, save)
             
         if plot_q1_against_q2 == 1:
-            rdv.plot_q1_against_q2(self, coordinates, save)
+            rdv.plot_q1_against_q2(self, self.coordinates_q1_q2, save)
             
-        if plot_end_effector_x_y == 1:
-            rdv.plot_end_effector_x_y(self, x_y_coordinates, s_axisq1, save)
-            
+        if plot_motion_x_y == 1:
+            rdv.plot_robot_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save)
+        
+        if plot_end_effector_motion ==1:
+            rdv.plot_end_effector_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save)
+        
+        if make_robot_motion_gif[0] == 1:
+            #just testing out making a gif
+            path = "plots/gifs/robot_motion_construction_images/"
+            rdv.plot_each_motion_stage_x_y(self, self.x_y_coordinates, self.s_axisq1, path, save)
+                        
+            path_backslashes = "plots\\gifs\\robot_motion_construction_images\\"
+            save_offset = "plots\\gifs\\"
+            filename = make_robot_motion_gif[2]
+            gif_duration = make_robot_motion_gif[1]
+            png_to_gif.compile_gif(path_backslashes, save_offset,filename)
  
-
+        if sub_plot_plot_q1_against_q2_and_motion_x_y == 1:
+            rdv.sub_q1_q2_v_robot_motion(self, self.coordinates_q1_q2, self.x_y_coordinates, save)
         
         
     def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
@@ -315,8 +368,11 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
      
         #repeat code used externally except simple_plot
         #print(path_straight_line)
-        self.qs = self.joint_space_straight_line(path_straight_line[0], path_straight_line[1])#straight_line_parameterisation(path_straight_line[0], path_straight_line[1])
-        
+        #self.qs = self.joint_space_straight_line(path_straight_line[0], path_straight_line[1])#
+        #path_straight_line[0] = (1,1)
+        #path_straight_line[1] = (2,0.5)
+        self.qs = self.straight_line_parameterisation(path_straight_line[0], path_straight_line[1])
+ 
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
         
         q, qd,qdd, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
