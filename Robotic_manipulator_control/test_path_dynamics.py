@@ -25,7 +25,7 @@ def test_plot_state_space():
     
    
     #straight_line_definition = [starting_joints, ending_joints]     
-    line_definition = [(0.2,0.15), (-0.3,0.25)]
+    line_definition = [(-0.2,-0.15), (0.3,-0.25)]
     
 
     #define grid to analyse
@@ -39,14 +39,15 @@ def test_plot_state_space():
     #simulate the kinematic movements of the robot
     manipulator.simulate_trajectory(manipulator.qs,0.1)
     #generate plots of the movement
-    manipulator.plot_simulation_parameters(1,1,1,1,1,[1, 50, "linear motion"], True)
+    
+    manipulator.plot_simulation_parameters(1,1,1,1,1,[1, 50, "linear motion"], 0,True)
     
     
-    manipulator.generate_bound_vector_plot([(0,2), (0.1,5), (0.2,2),(0.6,6),(0.8,0.4),])
+    #manipulator.generate_bound_vector_plot([(0,2), (0.1,5), (0.2,2),(0.6,6),(0.8,0.4),])
     
     
     #generate time optimal control to get from start to end
-    #trajectory = manipulator.generate_time_optimal_trajectory(True) #this part definitely needs work
+    trajectory = manipulator.generate_time_optimal_trajectory(True) #this part definitely needs work
 
    
         

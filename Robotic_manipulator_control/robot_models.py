@@ -402,7 +402,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
 
         #tangent_cone = f(s, sd)
         
-    def generate_bound_vector_plot(self, points_to_evaluate):
+    def generate_velocity_bound_vector_plot(self, points_to_evaluate):
         """
         method to generate a plot of a pa
         """
@@ -410,11 +410,8 @@ class two_dof_planar_robot(pd, pdc, rdv):
         evaluated_bounds_to_plot = pd.evaluate_bounds(self, points_to_evaluate)
         rdv.plot_bound_vectors(self, evaluated_bounds_to_plot)
         
-        
-        
-        
-        
-        
+
+ 
     def generate_time_optimal_trajectory(self, plot_trajectory=False):
         """
         method to take steps neccesary to design a time opeitmal control trajectory
@@ -431,11 +428,12 @@ class two_dof_planar_robot(pd, pdc, rdv):
    
         start_position =  (0,0)
         end_position = (1,0)
-        
-        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position, self.bounds)
+        pdc.__init__(self, self.bounds)
+        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position)
         
         if plot_trajectory==True:
-            rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, 1, 1)
+            rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, True, 0.5)
+            self.generate_velocity_bound_vector_plot(trajectory)
             
         
         return trajectory

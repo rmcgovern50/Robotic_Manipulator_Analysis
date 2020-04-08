@@ -17,14 +17,15 @@ class path_dynamics_controller():
     the robot along the state space. I need to 
     """
     
-    def __init__(self):
-        print("initialised")
+    def __init__(self, bounds):
+        #print("initialised")
         #pass        
-
-
+        self.bounds = bounds
+        #print(bounds)
+        #print("yeeeeeee")
 
   
-    def simple_time_optimal_controller(self, initial, final, bounds):
+    def simple_time_optimal_controller(self, initial, final):
         """
         This is a method that will output a valid trajectoy of (s, sd) points 
         from which a joint torque input sequence can be derived
@@ -68,27 +69,26 @@ class path_dynamics_controller():
         
         step_size = 0.1
         #1 backward integrate sdd = -L
-        
+        #print(self.bounds)
         #perform the backward integration first from final position
-        seg2 = self.integrate_motion(final, bounds, step_size, 'backwards' )
-        seg2.reverse()
+        seg_final = self.integrate_motion_time_optimal(final, step_size, 'backwards' )
+        seg_final.reverse()
         
-        
-        #x, p1 = fit_curve(seg1)
-        #plt.plot(x,p1)
 
         #2 forward integrate sdd == +U
         
-        seg1 = self.integrate_motion(initial, bounds, step_size, 'forwards')
+        seg_initial = self.integrate_motion_time_optimal(initial, step_size, 'forwards')
         
-        intersection_point = self.find_intersections(seg1, seg2, step_size)
+
+        intersection_point = self.find_intersections(seg_initial, seg_final, step_size)
         
-        all_segs = [seg1, seg2]
+         
+        all_segs = [seg_initial, seg_final]
         
         #print(all_segs)
         
         trajectory = self.connect_trajectories(all_segs, intersection_point)
-        
+        return trajectory, intersection_point     
         
         
         
@@ -134,7 +134,7 @@ class path_dynamics_controller():
         #trajectory = 1
         #print("we got the controller designed")
         #trajectory = seg1 +seg2
-        return trajectory, intersection_point
+        #return trajectory, intersection_point
         
     def find_intersections(self, seg1, seg2, step_size):
         """
@@ -184,8 +184,11 @@ class path_dynamics_controller():
         #val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
         try:
             index_min = np.argmin(seperation_list)#get the closest points
+            return [seg1_section[index_min]]
         except:
-            raise Exception("lines do not intersect")
+            return [(-1,-1)]#no intersections found
+        
+        #raise Exception("lines do not intersect")
             
         #print(val, idx)
         #print(seg1_section)
@@ -204,7 +207,7 @@ class path_dynamics_controller():
         #plt.plot(point, 'or',ms=10)
         
         #plt.show()
-        return [seg1_section[index_min]]
+
 
     def connect_trajectories(self, segs, intersection):
         """
@@ -251,7 +254,7 @@ class path_dynamics_controller():
         return trajectory
 
 
-    def integrate_motion(self, pos, bounds, step_size, direction='backwards'):
+    def integrate_motion_time_optimal(self, pos, step_size, direction="backwards"):
         """
         Arguments:
             start_coordinate - (x, y)
@@ -262,58 +265,43 @@ class path_dynamics_controller():
         return -
             trajectory - [(s1,sd1), ... , (sn, sdn) ]
         """
-   
-        current_pos = pos
-        trajectory = [current_pos]
+               
+        trajectory = [pos]
         i = 0
         
-
+        s = pos[0]
+        sd = pos[1]
+    
         integration_complete = False
 
-        while(integration_complete == False or i>1000):
+        while(integration_complete == False and i<1000):
             
             #calculate -L
             #print(current_pos)
-            L, U = self.get_sdd_lims(current_pos, bounds)
+            L, U = self.calc_upper_lower_bound_values(pos)
+            s = pos[0]
+            sd = pos[1]
+            
+            if direction == "backwards":
+                delta_s, delta_sd = self.calc_change_s_sd(-sd, -L, step_size)#integrate backwards
+            elif direction == "forwards":
+                delta_s, delta_sd = self.calc_change_s_sd(sd, U, step_size)#integrate forwards
 
-            if U>=L:
-    
-                #print(L, U)
-                s = current_pos[0]
-                sd = current_pos[1]
-                
 
-                #set how the integration works in if statements
-                if direction == 'backwards':
-                    
-                    change_in_s, change_in_sd = self.calc_change_s_sd(sd, L, step_size)
-                    
-                    #print((change_in_s, change_in_sd, sqrt(change_in_s**2 + change_in_sd**2)))
-                    new_s = s - change_in_s#c*sd
-                    new_sd = sd - change_in_sd#c*L
-                    
-                elif direction == 'forwards':
-                    
-                    change_in_s, change_in_sd = self.calc_change_s_sd(sd, U, step_size)
-                    
-                    #print((change_in_s, change_in_sd, sqrt(change_in_s**2 + change_in_sd**2)))
-                    new_s = s + change_in_s#c*sd
-                    new_sd = sd + change_in_sd#c*L
-                
-                new_position = (new_s, new_sd)
-                #check of valid
-                if new_position[0] >= 0 and new_position[0] <= 1 and new_position[1] >= 0:
-                    trajectory.append(new_position)
-                
-                
-                current_pos = new_position
-                i = i + 1
-            else:
-                integration_complete = True
+            s = s + delta_s
+            sd = sd + delta_sd
+            pos = (s, sd)
+            #print(pos)
+            trajectory.append(pos)
 
             
+            if L > U or s < 0 or s > 1 or sd < 0:
+                integration_complete = True
+                
+            #print(trajectory)
+            i=i+1
         #print('i=',i, )
-
+        
 
 
         return trajectory
@@ -330,9 +318,14 @@ class path_dynamics_controller():
         if abs(s_vel) > 0 and abs(sd_vel) > 0:
             
             length = sqrt(s_vel**2 + sd_vel**2)
-            delta_s = (s_vel*step_size)/length
-            delta_sd = (sd_vel*step_size)/length
-            #print()
+            b = step_size/length
+            
+            delta_s = (s_vel*b)#step_size)/length
+            delta_sd = (sd_vel*b)#step_size)/length
+            
+            #c = sqrt(delta_s**2 + delta_sd**2)
+            
+            #print(c, length, delta_s, delta_sd)
         elif  abs(s_vel) > 0 and abs(sd_vel) == 0:
             
             delta_s = step_size
@@ -347,71 +340,6 @@ class path_dynamics_controller():
 
         return delta_s, delta_sd
 
-    def get_sdd_lims(self, coordinate, bounds):
-        """
-        This is a method that will simply take in a coordnate in the state space and
-        output the up and down component of the tangent cone at that point
-        
-        Arguments:
-            s_val -s coordinate
-            sd_val - sd coordinate
-            bounds -  [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
-                        B01 is bound 1 on actuator zero
-                        B02 is bound 2 on actuator zero
-                        Ms0 is the value that decides the upper and lower at some s, sd number
-                        
-        return :
-            L - the max lower limit of all actuatators at (s_val, sd_val)
-            U - the min upper limit of all actuatators at (s_val, sd_val)
-        """
-        
-        #print(len(bounds))
-        number_of_actuators = len(bounds)
-        i = 0
-        s = self.s
-        sd = self.sd
-        upper = 0
-        lower = 0
-        s_val = coordinate[0]
-        sd_val = coordinate[1]
-        
-        
-        #loop through all the actuators and evaluate the bounds
-        while(i < number_of_actuators):
-            #evaluate the bounds
-            B1 = bounds[i][0].subs([(s, s_val), (sd, sd_val)])
-            B2 = bounds[i][1].subs([(s, s_val), (sd, sd_val)])
-            dir_decider = bounds[i][2].subs([(s, s_val), (sd, sd_val)])
-            
-            if dir_decider > 0:
-                #this is how we get the min upper each loop always makes the upper lim the lowest of the actuator lims
-                #
-                if B2 < upper  or i ==0: 
-                    upper_lim = B2
-                #similar;y take the max lower lim
-                if B1 > lower or i ==0:
-                    lower_lim = B1
-                
-            elif dir_decider < 0:
-                #this is how we get the min upper each loop always makes the upper lim the lowest of the actuator lims
-                #
-                if B1 < upper  or i ==0: 
-                    upper_lim = B1
-                #similar;y take the max lower lim
-                if B2 > lower or i ==0:
-                    lower_lim = B2
-                
-            else:
-                raise Exception("Problem with M(s), this value cannot be zero check things over bounds are ->", (B1, B2)) 
-            
-            #print((lower_lim, upper_lim))
-            i = i + 1
-
-        L = lower_lim
-        U = upper_lim
-        #print(L, U)
-        return L, U
-    
     
     def dsd_ds(self, sd, sdd):
         """
@@ -434,55 +362,49 @@ class path_dynamics_controller():
             
         return dsd_ds
   
-    
-    
+        
 
-    def generate_tangent_cone_components(self, bounds, s_lim, sd_lim):
+    def calc_upper_lower_bound_values(self, point):
         """
-        This method will generate tangent cones that can be used to work out 
-        the possible velcities along the state space of path dynamics. 
+        Method to take in a point and evaluate the upper and lower bounds at that point
         Arguments:
-            bounds = [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
-                    B01 is bound 1 on actuator zero
-                    B02 is bound 2 on actuator zero
-                    Ms0 is the value that decides the upper and lower at some s, sd number
-            
-        return
-         tangent_cones = [[(s1, sd1), (L(s1,sd1), U(s1, sd1))]_1..., [(sn, sdn), (L(sn,sdn), U(sn, sdn))]_n]
-        
+            point = (s, sd)
         """
-        s_val = s_lim[0]
-        s_max = s_lim[1]
-        s_inc = s_lim[2]
+        L = point[0]
+        U = point[1]
+        bounds = self.bounds
+        i = 0
 
-        sd_val = sd_lim[0]
-        sd_max = s_lim[1]
-        sd_inc = s_lim[2]
         
-        tangent_cones = []
-        tangent_cone = []
-        
-        #while loops loop through a regon of the parameterised state space
-        while(s_val <= s_max):
+        for bound in bounds:
             
-            while(sd_val <= sd_max):
+            lim_direction_decider = bound[2].subs([(self.s, point[0]), (self.sd, point[1])])
+            sub_list = [(self.s, point[0]), (self.sd, point[1])]
+            
+            #put the bounds the right way round
+
+            if lim_direction_decider > 0:
+                L_to_check =  bound[0].subs(sub_list)
+                U_to_check = bound[1].subs(sub_list)
+              
+            elif lim_direction_decider < 0:
+                L_to_check =  bound[1].subs(sub_list)
+                U_to_check = bound[0].subs(sub_list)
                 
-                #evaluate numerically
-                L, U = self.get_min_upper_max_lower(s_val, sd_val, bounds)                
-                tangent_cone = [(s_val, sd_val), L, U]
-                
-                if s_val == 0:
-                    tangent_cones = [tangent_cone]
-                else:
-                    tangent_cones.append(tangent_cone)
-                #print(upper_lim)
-                
-                #print(bounds)
-                sd_val = sd_val + sd_inc
-                
-            sd_val = sd_lim[0] # reset_sd_lim
-            s_val = s_val + s_inc
-        
-        #print(tangent_cones)
-        return tangent_cones
-        #print(self.robot.type)
+            else:
+                raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
+            
+            
+            
+            if i == 0:
+                L = L_to_check
+                U = U_to_check
+            else:
+                if L_to_check > L:
+                    L = L_to_check
+                if U_to_check < U:
+                    U = U_to_check
+            i = i + 1
+            
+            
+        return L, U

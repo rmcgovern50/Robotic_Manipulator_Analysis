@@ -328,10 +328,10 @@ class two_dof_robot_data_visualisation():
         pass
         
     
-    def plot_bound_vectors(self, evaluated_bounds, save=True, marker_size=5, filepath="bound_plot"):
+    def plot_bound_vectors(self, evaluated_bounds, save=True, marker_size=1, filepath="bound_plot"):
         """
         Arguments:
-            evaluated_bounds = [(s1, sd1, L1, U1),...,(sn, sdn, Ln, Un) ]
+            evaluated_bound= [(s1, sd1, L1, U1),...,(sn, sdn, Ln, Un) ]
         """
         s = [x[0] for x in evaluated_bounds]
         sd = [x[1] for x in evaluated_bounds]
@@ -368,22 +368,7 @@ class two_dof_robot_data_visualisation():
         else:
             plt.show()
         
-        
-        
-        
-        
-        #print(evaluated_bounds)
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
         
         
         

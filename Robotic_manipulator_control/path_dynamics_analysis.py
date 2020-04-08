@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sympy import Matrix, diff
 
 
+
 class path_dynamics():
     """
     This class will perform the calculations for analysing the admissable 
@@ -312,7 +313,7 @@ class path_dynamics():
         for point in points_for_evaluation:
             s = point[0]
             sd = point[1]
-            L, U= self.calc_upper_lower_bound_values(point)
+            L, U = self.calc_upper_lower_bound_values(point)
             
             if len(evaluated_points) == 0:
                 evaluated_points = [(s, sd, L, U)]
