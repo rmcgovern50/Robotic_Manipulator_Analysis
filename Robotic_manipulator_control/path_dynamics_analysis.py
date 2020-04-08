@@ -15,7 +15,7 @@ class path_dynamics():
     """
     
     
-    def __init__(self, constants_to_sub):
+    def __init__(self, constants_to_sub, s, sd, sdd):
         """
         Arguments:
         constants to sub - list of tuples used to sub in parameters of the robot description
@@ -23,7 +23,9 @@ class path_dynamics():
             
         """
         self.constants_to_sub = constants_to_sub
-
+        self.s = s
+        self.sd = sd
+        self.sdd = sdd
 
     def calc_qs_matrices(self, qs, qsd, qsdd):
         """
@@ -223,7 +225,7 @@ class path_dynamics():
             Bounds -A list of length n of tuples length 3 
                     a tuple of length 3 elements 0, and 1 contain bounds in terms of s and sd
                     element 3 contains a value that when evaluated decideds the upper and lower bound
-                    
+            
         return:
             true - point is admissable
             false -point in inadmissable
@@ -237,77 +239,90 @@ class path_dynamics():
         
         s, sd = self.s, self.sd
         
-        ordered_bounds = [] #variable to store the ordered bounds [(lower, upper)]
+        
+        
+        L, U = self.calc_upper_lower_bound_values((s_val,sd_val))
+        
+        if L > U:
+            return False
+        else:
+            return True
+
+
+
+    def calc_upper_lower_bound_values(self, point):
+        """
+        Method to take in a point and evaluate the upper and lower bounds at that point
+        Arguments:
+            point = (s, sd)
+        """
+        L = point[0]
+        U = point[1]
+        bounds = self.bounds
+        i = 0
+
         
         for bound in bounds:
-
-
-            lim_direction_decider = bound[2]                            
-            lim_direction_decider = lim_direction_decider.subs([(s, s_val), (sd, sd_val)])
-            #print(lim_direction_decider)
-            leftB = bound[0].subs([(s, s_val), (sd, sd_val)])
-            rightB = bound[1].subs([(s, s_val), (sd, sd_val)])
-            #if this value is -ve simply swap order fo b
             
-            #less than zero flips hhe order
-            if lim_direction_decider < 0:
-                if len(ordered_bounds) == 0:
-                    ordered_bounds = [(rightB, leftB)]
-                else:
-                    ordered_bounds.append((rightB, leftB))
-            #greater than preserves the order    
-            elif lim_direction_decider > 0:
-                if len(ordered_bounds) == 0:
-                    ordered_bounds = [(leftB, rightB)]
-                else:
-                    ordered_bounds.append((leftB, rightB))
-            #equal zero throws error as it doesn't make sense
+            lim_direction_decider = bound[2].subs([(self.s, point[0]), (self.sd, point[1])])
+            sub_list = [(self.s, point[0]), (self.sd, point[1])]
+            
+            #put the bounds the right way round
+
+            if lim_direction_decider > 0:
+                L_to_check =  bound[0].subs(sub_list)
+                U_to_check = bound[1].subs(sub_list)
+              
+            elif lim_direction_decider < 0:
+                L_to_check =  bound[1].subs(sub_list)
+                U_to_check = bound[0].subs(sub_list)
+                
             else:
-                raise Exception("Problem with M(s), this value cannot be zero")        
+                raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
             
-        
-        
-        #varables to store max and min
-        max_lower = 0
-        min_upper = 0
-        i = 0
-        #loop through each bound and find the min upper and max lower bounds
-        for bound in ordered_bounds:
-            #store the first element
+            
+            
             if i == 0:
-                min_upper = bound[1]
-                max_lower = bound[0]
+                L = L_to_check
+                U = U_to_check
             else:
-                #if a new min upper is found replace min_upper
-                if min_upper > bound[1]:
-                    min_upper = bound[1]
-                    
-                if max_lower < bound[0]:
-                    max_lower = bound[0]
+                if L_to_check > L:
+                    L = L_to_check
+                if U_to_check < U:
+                    U = U_to_check
             i = i + 1
             
-        #print(ordered_bounds)
-        #print(max_lower, min_upper)
+            
+        return L, U
+
+
+    def evaluate_bounds(self, points_for_evaluation):
+        """
+        Function simply takes in some points in the s sdot plane and evaluates the bounds
         
-        if max_lower < min_upper:
-            #print("admissable")
-            return True
-        else:
-            #print("inadmissable")
-            return False
+        Arguments
+            points_for_evaluation = [(s1,sd1),...,(sn,sdn)]
+        
+        return:
+            evaluated_points = [(s1,sd1, L1, U1),...,(sn,sdn, Ln, Un)]
+        """
+        
+        
+        evaluated_points = []
+        for point in points_for_evaluation:
+            s = point[0]
+            sd = point[1]
+            L, U= self.calc_upper_lower_bound_values(point)
+            
+            if len(evaluated_points) == 0:
+                evaluated_points = [(s, sd, L, U)]
+            else:
+                evaluated_points.append((s, sd, L, U))
+            
+            #print(s, sd, L, U)
 
-
-
-
-
-
-
-
-
-
-
-
-
+        evaluated_points 
+        return evaluated_points
 
 
 

@@ -24,7 +24,7 @@ import png_to_gif
 import matplotlib.pyplot as plt
 
 
-class two_dof_planar_prismatic(pd, pdc, rdv):
+class two_dof_planar_robot(pd, pdc, rdv):
     pass
     """
     This class is for the case specific parts of revolute slide robot
@@ -61,7 +61,7 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
-        super(two_dof_planar_prismatic, self).__init__(constants_to_sub)
+        super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd)
         
     def dynamics(self):
         
@@ -401,6 +401,20 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         
 
         #tangent_cone = f(s, sd)
+        
+    def generate_bound_vector_plot(self, points_to_evaluate):
+        """
+        method to generate a plot of a pa
+        """
+        
+        evaluated_bounds_to_plot = pd.evaluate_bounds(self, points_to_evaluate)
+        rdv.plot_bound_vectors(self, evaluated_bounds_to_plot)
+        
+        
+        
+        
+        
+        
     def generate_time_optimal_trajectory(self, plot_trajectory=False):
         """
         method to take steps neccesary to design a time opeitmal control trajectory
@@ -415,8 +429,10 @@ class two_dof_planar_prismatic(pd, pdc, rdv):
         #plot = pd.generate_state_space_plot(self, self.admissable_region, 1)
         #plot.show()
    
+        start_position =  (0,0)
+        end_position = (1,0)
         
-        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, (0,0), (1,0), self.bounds)
+        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position, self.bounds)
         
         if plot_trajectory==True:
             rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, 1, 1)
