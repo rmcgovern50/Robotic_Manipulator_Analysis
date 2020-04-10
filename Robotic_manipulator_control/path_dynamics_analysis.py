@@ -5,7 +5,7 @@ This is a class that will allow path dynamics to be analysed
 
 import my_math as mm# import sub_into_matrix
 import matplotlib.pyplot as plt
-from sympy import Matrix, diff
+from sympy import Matrix, diff, Transpose
 
 
 
@@ -16,7 +16,7 @@ class path_dynamics():
     """
     
     
-    def __init__(self, constants_to_sub, s, sd, sdd):
+    def __init__(self, constants_to_sub, s, sd, sdd, qd):
         """
         Arguments:
         constants to sub - list of tuples used to sub in parameters of the robot description
@@ -27,7 +27,8 @@ class path_dynamics():
         self.s = s
         self.sd = sd
         self.sdd = sdd
-
+        self.qd = qd
+        
     def calc_qs_matrices(self, qs, qsd, qsdd):
         """
         Arguments, the actuation inputs in terms of s
@@ -76,10 +77,10 @@ class path_dynamics():
         dqds = Matrix(dq_ds)   
         d2qds2 = Matrix(d2q_ds2)
 
-        qd = Matrix(dq_ds)*self.sd
-        qdd = Matrix(dqds)*(self.sdd) + Matrix(d2qds2)*(self.sd)**2
+        qds = Matrix(dq_ds)*self.sd
+        qdds = Matrix(dqds)*(self.sdd) + Matrix(d2qds2)*(self.sd)**2
         
-        return q, qd, qdd, dqds, d2qds2
+        return q, qds, qdds, dqds, d2qds2
 
     def calc_s_matrices(self, Mqs, Cqs, gqs, dqds,d2sds2):
         """
@@ -89,13 +90,19 @@ class path_dynamics():
         """
         
         #print(values_to_sub)
-        Ms = Mqs*dqds 
+        self.Ms = Mqs*dqds 
         Cs = Mqs*d2sds2 + (1/(self.sd))*Cqs*dqds
         gs = gqs
         
-        return Ms, Cs, gs
+        return self.Ms, Cs, gs
 
-
+    
+    def get_machine_kinetic_energy_q(self):
+       
+        kinetic_energy_expression_q = 0.5*Transpose(self.qd)*self.M*self.qd
+        kinetic_energy_expression_q = kinetic_energy_expression_q.subs(self.constants_to_sub)
+        return kinetic_energy_expression_q
+    
 
     def calc_bounds(self, Ms, Cs, gs):
         """

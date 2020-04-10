@@ -61,7 +61,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
         constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
-        super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd)
+        super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd, self.qd)
         
     def dynamics(self):
         
@@ -375,11 +375,11 @@ class two_dof_planar_robot(pd, pdc, rdv):
  
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
         
-        q, qd,qdd, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
+        _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
         #print(q, qd,qdd, dqds, d2qds2)
 
         #get all the necessary matrices in terms of the parameterised matrices
-        Mqs, Cqs, gqs = pd.calc_qs_matrices(self, q, qd, qdd)
+        Mqs, Cqs, gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
         #print(Mqs, Cqs, gqs)
         
         #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
@@ -402,13 +402,13 @@ class two_dof_planar_robot(pd, pdc, rdv):
 
         #tangent_cone = f(s, sd)
         
-    def generate_velocity_bound_vector_plot(self, points_to_evaluate):
+    def generate_velocity_bound_vector_plot(self, points_to_evaluate, save=False):
         """
         method to generate a plot of a pa
         """
         
         evaluated_bounds_to_plot = pd.evaluate_bounds(self, points_to_evaluate)
-        rdv.plot_bound_vectors(self, evaluated_bounds_to_plot)
+        rdv.plot_bound_vectors(self, evaluated_bounds_to_plot, save)
         
 
  
@@ -428,18 +428,28 @@ class two_dof_planar_robot(pd, pdc, rdv):
    
         start_position =  (0,0)
         end_position = (1,0)
-        pdc.__init__(self, self.bounds)
+        
+        pdc.__init__(self, self.bounds, self.s, self.sd)
+        
+        
+        Ek_q = pd.get_machine_kinetic_energy_q(self)[0]
+
+        Ek_s = Ek_q.subs([(self.q1, self.qs[0]), (self.q2, self.qs[1]), (self.q1d, self.qds[0]), (self.q2d, self.qds[1])])
+        
+        print(pdc.evaluate_Ek_s(self, Ek_s, 0.5,5))
+        
         trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position)
         
         if plot_trajectory==True:
-            rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, True, 0.5)
-            self.generate_velocity_bound_vector_plot(trajectory)
-            
-        
+            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, False)
         return trajectory
-            
+        
+    def generate_time_optimal_trajectory_plots(self, trajectory, intersection_point, save=True):
 
-
+        rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, save, 0.5)
+        self.generate_velocity_bound_vector_plot(trajectory, save)
+        
+    
 
 
     

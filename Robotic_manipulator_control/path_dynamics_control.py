@@ -17,10 +17,15 @@ class path_dynamics_controller():
     the robot along the state space. I need to 
     """
     
-    def __init__(self, bounds):
+    def __init__(self, bounds, s, sd):
         #print("initialised")
         #pass        
         self.bounds = bounds
+        self.s = s 
+        self.sd = sd
+
+
+
         #print(bounds)
         #print("yeeeeeee")
 
@@ -77,17 +82,18 @@ class path_dynamics_controller():
 
         #2 forward integrate sdd == +U
         
-        seg_initial = self.integrate_motion_time_optimal(initial, step_size, 'forwards')
+        #seg_initial = self.integrate_motion_time_optimal(initial, step_size, 'forwards')
         
 
-        intersection_point = self.find_intersections(seg_initial, seg_final, step_size)
+        #intersection_point = self.find_intersections(seg_initial, seg_final, step_size)
         
          
-        all_segs = [seg_initial, seg_final]
+        #all_segs = [seg_initial, seg_final]
         
         #print(all_segs)
         
-        trajectory = self.connect_trajectories(all_segs, intersection_point)
+        trajectory = seg_final#self.connect_trajectories(all_segs, intersection_point)
+        intersection_point = [(0,0)]
         return trajectory, intersection_point     
         
         
@@ -408,3 +414,43 @@ class path_dynamics_controller():
             
             
         return L, U
+
+    def evaluate_Ek_s(self, Ek_s, s, sd):
+        """
+        Method to take in the kinetic energy function of teh robot and oyhre
+        
+            Arguments:
+                Ek_s  and expression of teh form f(s, sd)
+        
+            return
+                Ek_val = Ek_evaluated at (s,sd)
+        """
+        Ek_val = Ek_s.subs([(self.s, s), (self.sd, sd)])
+        
+        
+        
+        return Ek_val
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

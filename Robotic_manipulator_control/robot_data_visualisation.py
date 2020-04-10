@@ -350,7 +350,7 @@ class two_dof_robot_data_visualisation():
         else:
             fig = plt.figure()
         ax1 = plt.subplot2grid((1,1),(0,0))
-        print(sd[1], U[1])
+        #print(sd[1], U[1])
         ax1.plot(s,sd,'or',ms=marker_size)
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
