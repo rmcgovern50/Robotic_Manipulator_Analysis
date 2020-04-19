@@ -72,9 +72,9 @@ class two_dof_robot_data_visualisation():
         else:
             fig = plt.figure()
         
-        plt.plot(x1_val, y1_val, 'or',ms=marker_size, color='r', label='admissable region')
-        plt.plot(x2_val, y2_val, 'or',ms=2*marker_size, color='b', label='controlled trajectory' )
-        plt.plot(x3_val, y3_val, 'or',ms=10*marker_size, color='c', label='switching points')
+        plt.plot(x1_val, y1_val, 'or',ms=0.25*marker_size, color='r', label='admissable region')
+        plt.plot(x2_val, y2_val, 'or',ms=1*marker_size, color='b', label='controlled trajectory' )
+        plt.plot(x3_val, y3_val, 'or',ms=1*marker_size, color='c', label='switching points')
         
         plt.title("Plot of robot trajectory through admissable region")
         plt.legend()
@@ -82,6 +82,7 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("$\dot{s}$")
         if save == True:
             fig.savefig("plots/"+filepath)
+            plt.close()
         else:
             plt.show()
 
@@ -112,7 +113,7 @@ class two_dof_robot_data_visualisation():
         else:
             plt.show()
     
-    def plot_q2_against_s(self, s_axisq2, save=True):
+    def plot_q2_against_s(self, s_axisq2, save=True, marker_size = 5, file_name="q2 vs s.png"):
         """
         produce a plot of q2 against s
         """
@@ -127,18 +128,18 @@ class two_dof_robot_data_visualisation():
             fig = plt.figure(dpi=600)
         else:
             fig = plt.figure()
-        plt.plot(x_val,y_val,'or',ms=5)
+        plt.plot(x_val,y_val,'or',ms=marker_size)
         
         plt.grid(color='black', linestyle='-', linewidth=0.5)
         plt.title("Angle of q2 vs s")
         plt.xlabel("s")
         plt.ylabel("q2 (degrees)")
         if save == True:
-            fig.savefig("plots/q2 vs s.png")
+            fig.savefig("plots/" + file_name)
         else:
             plt.show() 
             
-    def plot_q1_against_q2(self, coordinates, save=True):
+    def plot_q1_against_q2(self, coordinates, save=True, marker_size = 5, file_name="q2 vs s.png"):
         """
         produce a plot of q1 against q2
         """        
@@ -152,18 +153,18 @@ class two_dof_robot_data_visualisation():
             fig = plt.figure(dpi=600)
         else:
             fig = plt.figure()
-        plt.plot(x_val,y_val,'or',ms=5)
+        plt.plot(x_val,y_val,'or',ms=marker_size)
         plt.grid(color='black', linestyle='-', linewidth=0.5)
         plt.title("Angle of q1 vs angle of q2")
         plt.xlabel("q1 (degrees)")
         plt.ylabel("q2 (degrees)")
         if save == True:
-            fig.savefig("plots/q1 vs q2.png")
+            fig.savefig("plots/" + file_name)
         else:
             plt.show()
         
         
-    def plot_robot_motion_x_y(self, x_y_coordinates, s_axisq1, save=True):
+    def plot_robot_motion_x_y(self, x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="robot_motion"):
         """
         produce a plot of qhow the robot moves in the workspace
         """           
@@ -174,9 +175,9 @@ class two_dof_robot_data_visualisation():
             fig = plt.figure(dpi=600)
         else:
             fig = plt.figure()
-        plt.plot(x_val[0],y_val[0],'or', color='red', ms=5, label="first end effector position")
+        plt.plot(x_val[0],y_val[0],'or', color='red', ms=marker_size, label="first end effector position")
         plt.plot(x_val[1:len(x_val)-1],y_val[1:len(y_val)-1],'or', color='orange', ms=5, label="end effector")
-        plt.plot(x_val[-1:],y_val[-1:],'or', color='blue', ms=5, label="last effector position")
+        plt.plot(x_val[-1:],y_val[-1:],'or', color='blue', ms=marker_size, label="last effector position")
         i = 0
         
         
@@ -219,12 +220,12 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("x (metres)")
         plt.ylabel("y (metres)")
         if save == True:
-            fig.savefig("plots/workspace.png")
+            fig.savefig("plots/"+file_name)
         else:
             plt.show()    
             
 
-    def plot_end_effector_motion_x_y(self, x_y_coordinates, s_axisq1, save=True):
+    def plot_end_effector_motion_x_y(self, x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="workspace.png"):
         """
         produce a plot of qhow the robot moves in the workspace
         """           
@@ -235,9 +236,9 @@ class two_dof_robot_data_visualisation():
             fig = plt.figure(dpi=600)
         else:
             fig = plt.figure()
-        plt.plot(x_val[0],y_val[0],'or', color='red', ms=5, label="first end effector position")
+        plt.plot(x_val[0],y_val[0],'or', color='red', ms=marker_size, label="first end effector position")
         plt.plot(x_val[1:len(x_val)-1],y_val[1:len(y_val)-1],'or', color='orange', ms=5, label="end effector")
-        plt.plot(x_val[-1:],y_val[-1:],'or', color='blue', ms=5, label="last effector position")
+        plt.plot(x_val[-1:],y_val[-1:],'or', color='blue', ms=marker_size, label="last effector position")
             
         plt.grid(color='black', linestyle='-', linewidth=0.5)
         plt.legend()
@@ -254,14 +255,14 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("x (metres)")
         plt.ylabel("y (metres)")
         if save == True:
-            fig.savefig("plots/workspace.png")
+            fig.savefig("plots/"+file_name)
         else:
             plt.show()      
 
 
 
 
-    def plot_each_motion_stage_x_y(self, x_y_coordinates, s_axisq1, save_path="plots/gifs/robot_motion_construction_images/", save=True):
+    def plot_each_motion_stage_x_y(self, x_y_coordinates, s_axisq1, save_path="plots/gifs/robot_motion_construction_images/", save=True, marker_size=5):
         """
         produce and save a plot for each part of the robot motion in the workspace
         this will allow for animated gif to be produced of the motion
@@ -282,7 +283,7 @@ class two_dof_robot_data_visualisation():
                 fig = plt.figure(dpi=600)
             else:
                 fig = plt.figure()
-            plt.plot(x_val[i],y_val[i],'or', color='orange', ms=5, label="end effector")
+            plt.plot(x_val[i],y_val[i],'or', color='orange', ms=marker_size, label="end effector")
             
             #attach labels on the first loop
             plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
@@ -321,7 +322,7 @@ class two_dof_robot_data_visualisation():
         
 
 
-    def sub_q1_q2_v_robot_motion(self, coordinates_q1_q2, x_y_coordinates, save=True):
+    def sub_q1_q2_v_robot_motion(self, coordinates_q1_q2, x_y_coordinates, save=True, marker_size = 5 ,file_name="sub plot"):
         """
         This method will produce a subplot array containing q1vq2 and the motion of the robot in the workspace
         """

@@ -307,34 +307,34 @@ class two_dof_planar_robot(pd, pdc, rdv):
 
 
     def plot_simulation_parameters(self,
-                                     plot_q1_against_s=0,\
-                                     plot_q2_against_s=0,\
-                                     plot_q1_against_q2=0,\
-                                     plot_motion_x_y=0,\
-                                     plot_end_effector_motion=0,\
+                                     plot_q1_against_s=[0, "q1 v s"],\
+                                     plot_q2_against_s=[0, "q2 v s"],\
+                                     plot_q1_against_q2=[0, "q1, vs q2"],\
+                                     plot_motion_x_y=[0, "workspace motion"],\
+                                     plot_end_effector_motion=[0, "end effector motion"],\
                                      make_robot_motion_gif=[0, 50, "robot_motion"],\
-                                     sub_plot_plot_q1_against_q2_and_motion_x_y =0,\
+                                     sub_plot_plot_q1_against_q2_and_motion_x_y =[0, "sub plots q1vq2, workspace"],\
                                      save=False):
 
-        if plot_q1_against_s == 1:
-            rdv.plot_q1_against_s(self, self.s_axisq1, save)
+        if plot_q1_against_s[0] == 1:
+            rdv.plot_q1_against_s(self, self.s_axisq1, save, 1, plot_q1_against_s[1])
 
-        if plot_q2_against_s == 1:
-            rdv.plot_q2_against_s(self, self.s_axisq2, save)
+        if plot_q2_against_s[0] == 1:
+            rdv.plot_q2_against_s(self, self.s_axisq2, save, 5, plot_q2_against_s[1])
             
-        if plot_q1_against_q2 == 1:
-            rdv.plot_q1_against_q2(self, self.coordinates_q1_q2, save)
+        if plot_q1_against_q2[0] == 1:
+            rdv.plot_q1_against_q2(self, self.coordinates_q1_q2,save, 5, plot_q1_against_q2[1])
             
-        if plot_motion_x_y == 1:
-            rdv.plot_robot_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save)
+        if plot_motion_x_y[0] == 1:
+            rdv.plot_robot_motion_x_y(self, self.x_y_coordinates, self.s_axisq1 ,save, 5,plot_motion_x_y[1])
         
-        if plot_end_effector_motion ==1:
-            rdv.plot_end_effector_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save)
+        if plot_end_effector_motion[0] ==1:
+            rdv.plot_end_effector_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
         
         if make_robot_motion_gif[0] == 1:
             #just testing out making a gif
             path = "plots/gifs/robot_motion_construction_images/"
-            rdv.plot_each_motion_stage_x_y(self, self.x_y_coordinates, self.s_axisq1, path, save)
+            rdv.plot_each_motion_stage_x_y(self, self.x_y_coordinates, self.s_axisq1, path ,save, 5)
                         
             path_backslashes = "plots\\gifs\\robot_motion_construction_images\\"
             save_offset = "plots\\gifs\\"
@@ -342,8 +342,8 @@ class two_dof_planar_robot(pd, pdc, rdv):
             gif_duration = make_robot_motion_gif[1]
             png_to_gif.compile_gif(path_backslashes, save_offset,filename)
  
-        if sub_plot_plot_q1_against_q2_and_motion_x_y == 1:
-            rdv.sub_q1_q2_v_robot_motion(self, self.coordinates_q1_q2, self.x_y_coordinates, save)
+        if sub_plot_plot_q1_against_q2_and_motion_x_y[0] == 1:
+            rdv.sub_q1_q2_v_robot_motion(self, self.coordinates_q1_q2, self.x_y_coordinates, save, 5,sub_plot_plot_q1_against_q2_and_motion_x_y[1])
         
         
     def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
@@ -436,18 +436,18 @@ class two_dof_planar_robot(pd, pdc, rdv):
 
         Ek_s = Ek_q.subs([(self.q1, self.qs[0]), (self.q2, self.qs[1]), (self.q1d, self.qds[0]), (self.q2d, self.qds[1])])
         
-        print(pdc.evaluate_Ek_s(self, Ek_s, 0.5,5))
+        #print(pdc.evaluate_Ek_s(self, Ek_s, 0.5,5))
         
         trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position)
         
         if plot_trajectory==True:
-            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, False)
+            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, True)
         return trajectory
         
     def generate_time_optimal_trajectory_plots(self, trajectory, intersection_point, save=True):
 
         rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, save, 0.5)
-        self.generate_velocity_bound_vector_plot(trajectory, save)
+        #self.generate_velocity_bound_vector_plot(trajectory, save)
         
     
 
