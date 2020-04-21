@@ -332,7 +332,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
             rdv.plot_robot_motion_x_y(rdv, self.link_lengths, self.x_y_coordinates, self.s_axisq1 ,save, 5,plot_motion_x_y[1])
         
         if plot_end_effector_motion[0] ==1:
-            rdv.plot_end_effector_motion_x_y(rdv, self.link_lengths,self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
+            rdv.plot_end_effector_motion_x_y(rdv, self.link_lengths, self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
         
         if make_robot_motion_gif[0] == 1:
             #just testing out making a gif
@@ -409,7 +409,6 @@ class two_dof_planar_robot(pd, pdc, rdv):
         """
         method to generate a plot of a pa
         """
-        
         evaluated_bounds_to_plot = pd.evaluate_bounds(self, points_to_evaluate)
         rdv.plot_bound_vectors(self, evaluated_bounds_to_plot, save)
         
