@@ -16,7 +16,7 @@ class path_dynamics():
     """
     
     
-    def __init__(self, constants_to_sub, s, sd, sdd, qd):
+    def __init__(self, M, C, g, q1, q2, q1d, q2d, q1dd, q2dd, constants_to_sub, s, sd, sdd, qd):
         """
         Arguments:
         constants to sub - list of tuples used to sub in parameters of the robot description
@@ -28,12 +28,23 @@ class path_dynamics():
         self.sd = sd
         self.sdd = sdd
         self.qd = qd
+        self.M = M
+        self.C = C
+        self.g =g
+        self.q1 = q1
+        self.q2 = q2
+        self.q1d = q1d
+        self.q2d = q2d
+        self.q1dd = q1dd
+        self.q2dd = q2dd
+        
         
     def calc_qs_matrices(self, qs, qsd, qsdd):
         """
         Arguments, the actuation inputs in terms of s
         return - dynamics matrices in terms of s 
         """
+        
         
         M_explicit = mm.sub_into_matrix(self.M, self.constants_to_sub) 
         C_explicit = mm.sub_into_matrix(self.C, self.constants_to_sub)
@@ -136,11 +147,10 @@ class path_dynamics():
                            (joint[1] + subtract_part)/divide_part,\
                            Ms_part)
             if i == 0:
-                #print(Cs.row(i).shape)
-                #print((joint[0] + /list(Ms.row(i))[0])
-                
+                #bound for joint 1
                 bounds = [bound_tuple]
             else:
+                #bounds for each other joint
                 bounds.append(bound_tuple)    
             i = i + 1
         
@@ -244,10 +254,7 @@ class path_dynamics():
         If the max lower > min upper bound the function returns true, else it 
         returns false
         """
-        
-        s, sd = self.s, self.sd
-        
-        
+
         
         L, U = self.calc_upper_lower_bound_values((s_val,sd_val))
         
@@ -276,19 +283,17 @@ class path_dynamics():
             sub_list = [(self.s, point[0]), (self.sd, point[1])]
             
             #put the bounds the right way round
-
+            
             if lim_direction_decider > 0:
                 L_to_check =  bound[0].subs(sub_list)
                 U_to_check = bound[1].subs(sub_list)
-              
+                
             elif lim_direction_decider < 0:
                 L_to_check =  bound[1].subs(sub_list)
                 U_to_check = bound[0].subs(sub_list)
                 
             else:
                 raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
-            
-            
             
             if i == 0:
                 L = L_to_check

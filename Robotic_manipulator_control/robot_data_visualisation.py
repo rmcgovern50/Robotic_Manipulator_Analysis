@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math as m
 
-
 class two_dof_robot_data_visualisation():
     
     
@@ -39,6 +38,7 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("$\dot{s}$")
         if save == True:
             fig.savefig("plots/"+filepath)
+            plt.close()
         else:
             plt.show()
         
@@ -55,17 +55,19 @@ class two_dof_robot_data_visualisation():
         produces a plot of the s sdot region with a control trajectory and switchng pounts marked
 
         """
-
-
+        plot_switch = True
 
         x1_val = [x[0] for x in admissable_region]
         y1_val = [x[1] for x in admissable_region]
         
         x2_val = [x[0] for x in control_trajectory]
         y2_val = [x[1] for x in control_trajectory]
-        
-        x3_val = [x[0] for x in switching_points]
-        y3_val = [x[1] for x in switching_points]
+        try:
+            x3_val = [x[0] for x in switching_points]
+            y3_val = [x[1] for x in switching_points]
+        except:    
+            print("no valid switching points")
+            plot_switch = False
         
         if save == True:
             fig = plt.figure(dpi=600)
@@ -74,12 +76,15 @@ class two_dof_robot_data_visualisation():
         
         plt.plot(x1_val, y1_val, 'or',ms=0.25*marker_size, color='r', label='admissable region')
         plt.plot(x2_val, y2_val, 'or',ms=1*marker_size, color='b', label='controlled trajectory' )
-        plt.plot(x3_val, y3_val, 'or',ms=1*marker_size, color='c', label='switching points')
+        
+        if plot_switch == True:
+            plt.plot(x3_val, y3_val, 'or',ms=5*marker_size, color='c', label='switching points')
         
         plt.title("Plot of robot trajectory through admissable region")
         plt.legend()
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
+        #print("hvsbhvefb")
         if save == True:
             fig.savefig("plots/"+filepath)
             plt.close()
@@ -88,7 +93,7 @@ class two_dof_robot_data_visualisation():
 
 
             
-    def plot_q1_against_s(self, s_axisq1, save=True):
+    def plot_q1_against_s(self, s_axisq1, save=True, marker_size = 5, file_name="q1 vs s.png"):
         """
         produce a plot of q1 against s
         """
@@ -102,14 +107,15 @@ class two_dof_robot_data_visualisation():
             fig = plt.figure(dpi=600)
         else:
             fig = plt.figure()
-        plt.plot(x_val, y_val,'or',ms=5)
+        plt.plot(x_val, y_val,'or',ms=marker_size)
         
         plt.grid(color='black', linestyle='-', linewidth=0.5)
         plt.title("Angle of q1 vs s")
         plt.xlabel("s")
         plt.ylabel("q1 (degrees)")
         if save == True:
-            fig.savefig("plots/q1 vs s.png")
+            fig.savefig("plots/" + file_name)
+            plt.close()
         else:
             plt.show()
     
@@ -136,6 +142,7 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("q2 (degrees)")
         if save == True:
             fig.savefig("plots/" + file_name)
+            plt.close()
         else:
             plt.show() 
             
@@ -160,11 +167,12 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("q2 (degrees)")
         if save == True:
             fig.savefig("plots/" + file_name)
+            plt.close()
         else:
             plt.show()
         
         
-    def plot_robot_motion_x_y(self, x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="robot_motion"):
+    def plot_robot_motion_x_y(self, link_lengths, x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="robot_motion"):
         """
         produce a plot of qhow the robot moves in the workspace
         """           
@@ -185,24 +193,24 @@ class two_dof_robot_data_visualisation():
         for x in x_val:
             if i == 0:
                 #attach labels on the first loop
-                plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
-                          [self.link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g', label="links")
+                plt.plot([link_lengths[0]*m.cos(q1[i]), x],\
+                          [link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g', label="links")
                 
-                plt.plot([0, self.link_lengths[0]*m.cos(q1[i])],\
-                          [0, self.link_lengths[0]*m.sin(q1[i])], '-', color='g')
+                plt.plot([0, link_lengths[0]*m.cos(q1[i])],\
+                          [0, link_lengths[0]*m.sin(q1[i])], '-', color='g')
                 
-                plt.plot(self.link_lengths[0]*m.cos(q1[i]),\
-                          self.link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2, label="joint")
+                plt.plot(link_lengths[0]*m.cos(q1[i]),\
+                          link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2, label="joint")
             else:
                 
-                plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
-                          [self.link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g')
+                plt.plot([link_lengths[0]*m.cos(q1[i]), x],\
+                          [link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g')
                 
-                plt.plot([0, self.link_lengths[0]*m.cos(q1[i])],\
-                          [0, self.link_lengths[0]*m.sin(q1[i])], '-', color='g')
+                plt.plot([0, link_lengths[0]*m.cos(q1[i])],\
+                          [0, link_lengths[0]*m.sin(q1[i])], '-', color='g')
                 
-                plt.plot(self.link_lengths[0]*m.cos(q1[i]),\
-                          self.link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2)
+                plt.plot(link_lengths[0]*m.cos(q1[i]),\
+                          link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2)
             i = i + 1
             
         plt.grid(color='black', linestyle='-', linewidth=0.5)
@@ -210,7 +218,7 @@ class two_dof_robot_data_visualisation():
         
         
         #scale axis
-        max_extension = self.link_lengths[0] + self.link_lengths[1] + 0.2
+        max_extension = link_lengths[0] + link_lengths[1] + 0.2
         plt.xlim(right=max_extension) #xmax is your value
         plt.xlim(left=-max_extension) #xmin is your value
         plt.ylim(top=max_extension) #ymax is your value
@@ -221,11 +229,12 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("y (metres)")
         if save == True:
             fig.savefig("plots/"+file_name)
+            plt.close()
         else:
             plt.show()    
             
 
-    def plot_end_effector_motion_x_y(self, x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="workspace.png"):
+    def plot_end_effector_motion_x_y(self, link_lengths ,x_y_coordinates, s_axisq1, save=True, marker_size=5, file_name="workspace.png"):
         """
         produce a plot of qhow the robot moves in the workspace
         """           
@@ -245,7 +254,7 @@ class two_dof_robot_data_visualisation():
         
         
         #scale axis
-        max_extension = self.link_lengths[0] + self.link_lengths[1] + 0.2
+        max_extension = link_lengths[0] + link_lengths[1] + 0.2
         plt.xlim(right=max_extension) #xmax is your value
         plt.xlim(left=-max_extension) #xmin is your value
         plt.ylim(top=max_extension) #ymax is your value
@@ -256,13 +265,14 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("y (metres)")
         if save == True:
             fig.savefig("plots/"+file_name)
+            plt.close()
         else:
             plt.show()      
 
 
 
 
-    def plot_each_motion_stage_x_y(self, x_y_coordinates, s_axisq1, save_path="plots/gifs/robot_motion_construction_images/", save=True, marker_size=5):
+    def plot_each_motion_stage_x_y(self, link_lengths,x_y_coordinates, s_axisq1, save_path="plots/gifs/robot_motion_construction_images/", save=True, marker_size=5):
         """
         produce and save a plot for each part of the robot motion in the workspace
         this will allow for animated gif to be produced of the motion
@@ -286,14 +296,14 @@ class two_dof_robot_data_visualisation():
             plt.plot(x_val[i],y_val[i],'or', color='orange', ms=marker_size, label="end effector")
             
             #attach labels on the first loop
-            plt.plot([self.link_lengths[0]*m.cos(q1[i]), x],\
-                      [self.link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g', label="links")
+            plt.plot([link_lengths[0]*m.cos(q1[i]), x],\
+                      [link_lengths[0]*m.sin(q1[i]), y_val[i]], '-', color='g', label="links")
             
-            plt.plot([0, self.link_lengths[0]*m.cos(q1[i])],\
-                      [0, self.link_lengths[0]*m.sin(q1[i])], '-', color='g')
+            plt.plot([0, link_lengths[0]*m.cos(q1[i])],\
+                      [0, link_lengths[0]*m.sin(q1[i])], '-', color='g')
             
-            plt.plot(self.link_lengths[0]*m.cos(q1[i]),\
-                      self.link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2, label="joint")
+            plt.plot(link_lengths[0]*m.cos(q1[i]),\
+                      link_lengths[0]*m.sin(q1[i]), 'or', color='b', ms=2, label="joint")
 
         
             
@@ -306,7 +316,7 @@ class two_dof_robot_data_visualisation():
             plt.ylabel("y (metres)")    
 
             #scale axis
-            max_extension = self.link_lengths[0] + self.link_lengths[1] + 0.2
+            max_extension = link_lengths[0] + link_lengths[1] + 0.2
             plt.xlim(right=max_extension) #xmax is your value
             plt.xlim(left=-max_extension) #xmin is your value
             plt.ylim(top=max_extension) #ymax is your value
@@ -315,6 +325,7 @@ class two_dof_robot_data_visualisation():
            
             if save == True:
                 fig.savefig(save_path+str(i))
+                plt.close()
             else:
                 plt.show()   
 
@@ -366,31 +377,7 @@ class two_dof_robot_data_visualisation():
 
         if save == True:
             fig.savefig("plots/"+filepath)
+            plt.close()
         else:
             plt.show()
-        
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
-
-
+            

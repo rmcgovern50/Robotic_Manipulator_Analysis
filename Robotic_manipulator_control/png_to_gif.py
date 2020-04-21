@@ -44,7 +44,7 @@ def compile_gif(offset_path = "robot_motion_construction_images\\", save_offset=
             
         i = i + 1
         
-    print(names_no_extension)
+    #print(names_no_extension)
 
     for i in imgs:
         new_frame = Image.open(i)

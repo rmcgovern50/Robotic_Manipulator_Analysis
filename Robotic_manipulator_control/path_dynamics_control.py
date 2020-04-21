@@ -18,10 +18,11 @@ class path_dynamics_controller():
     the robot along the state space. I need to 
     """
     
-    def __init__(self, bounds, s, sd):
+    def __init__(self, bounds, boundry_points,s, sd):
         #print("initialised")
         #pass        
         self.bounds = bounds
+        self.boundry_points = boundry_points
         self.s = s 
         self.sd = sd
 
@@ -48,142 +49,171 @@ class path_dynamics_controller():
         return:
             trajectory - [(s1,sd1), ... , (sn, sdn) ]
             trajectory from s_start->s_end
-        
-        
-        
-        The process is outined as:
-            
-            1- Start at final position and integrate backwards sdd == -L until U-L <= 0 (velocity limit curve hit) 
-              or s==0 (max acceleration decelleration possible)
-            
-            2- Start at intial and integrate forward sdd == U until either:
-                U-L <= 0 (velocity limit or inadmissable region found) or s >= 1
-            
-            3- If the inadmissable region is hit in step 2:
-                    take steps backwards taking the sdd == L and run forwards until inadmissable region is hit or sd == 0
-                    repeat until it isnt hit and at the point where the boundy of this region 
-                    find the point on this curve that is closest to the in admissable region (mark it as a switching point)
-            
-            4- switch sdd == U at point in step 3, integrat forward until either:
-                if U-L <=0: repeat step 3:
-                
-                else if curve formed by step 1 is intersected mark this as a switching point for decelleration
-            
-            5- output a valid serise of points along the trajectories calculated 
-                (these can readily be used to calculater the neccessary  actuator torques)
+            switch points = [(s1, sd1), ..., (sm, sdm)]
+
         """
         
-        step_size = 0.1
+        step_size = 0.05
         #1 backward integrate sdd = -L
         #print(self.bounds)
         #perform the backward integration first from final position
         
 
-        seg_final, _, _= self.integrate_motion_time_optimal(final, step_size, "L", 'backwards')
+        seg_final, _, reason= self.integrate_motion_time_optimal(final, step_size, "L", 'backwards')
         seg_final.reverse()
-        #boundries.reverse()
         segments = [seg_final]
-        
 
-        start_seg, _, _ = self.integrate_motion_time_optimal(initial, step_size, "U",'forwards')
+        start_seg, _, reason = self.integrate_motion_time_optimal(initial, step_size, "U",'forwards')
         segments.insert(0,start_seg)
-        """
-        #chec to see if the first and least segment intersect
-        intersection = self.find_intersections(segments[0], segments[1], step_size)
-        print(intersection)
         
-        i = 0
-        #print(segments[i])
-        #print("=============================")
-        #print(segments[i][len(segments[i])-1])
-        
-        point = segments[i][len(segments[i])-1]
-        print("===============")
-        print(point)
-        new, _, _ = self.integrate_motion_time_optimal(point, step_size, "L",'forwards')  
-        print(new)
-
-        point = segments[i][len(segments[i])-2]
-        print("================")
-        print(point)        
-        new, _, reason = self.integrate_motion_time_optimal(point, step_size, "L",'forwards')              
-        print(new)
         print(reason)
         
-        point = segments[i][len(segments[i])-3]
-        print("================")
-        print(point)        
-        new, _, reason = self.integrate_motion_time_optimal(point, step_size, "L",'forwards')              
-        print(new)
-        print(reason)
+        trajectory = segments[0] + segments[1]
+        combined_trajectories = False
+        switch_point = False
+        
+        if reason == "s>1":
+            combined_trajectories, switch_point = self.find_switch_point(segments[0], segments[1], step_size)
+            if switch_point != False:
+                print("path found")
+            else:
+                print("no valid path")
 
-        point = segments[i][len(segments[i])-4]
-        print("================")
-        print(point)        
-        new, _, reason = self.integrate_motion_time_optimal(point, step_size, "L",'forwards')              
-        print(new)
-        print(reason)
-        """
-        i = 0
-        j = 1
-        reason = "unset"
-        switch_index = []
-        
-        while(reason != "sd<0" and j <10000):
-            point = segments[i][len(segments[i])-j]
-            new_seg, _, reason = self.integrate_motion_time_optimal(point, step_size, "L",'forwards')  
-            j = j + 1
-        
-        switch_index = [len(segments[i])-j]
-        
-        switch_points = [(segments[0][switch_index[0]])]
-        
-        segments.insert(1,new_seg)
+        elif reason == "sd<0":
+            combined_trajectories, switch_point = self.find_switch_point(segments[0], segments[1], step_size)
+            if switch_point != False:
+                print("path found")
+                trajectory = combined_trajectories
+            else:
+                print("no valid path")
 
+        elif reason == "L>U": 
+            combined_trajectories, switch_point = self.find_switch_point(segments[0], segments[1], step_size)
+            if switch_point != False:
+                print("path found") #path found algorithm complete
+                trajectory = combined_trajectories
+            else:
+                print("bit more involved here")
 
-        i = 1        
-        j = 0        
-        reason = "unset"
-        
-        while(not(reason == "s>1") and j <10000):
-            point = segments[i][0+j]
-            new_seg2, _, reason = self.integrate_motion_time_optimal(point, step_size, "U",'forwards')  
-            j = j + 1
-            print
-        
-        switch_index.append(len(segments[i])-j)
-        switch_points.append((segments[1][switch_index[1]]))
-        
-        segments.insert(2,new_seg2)        
-        
-        """
-        print(j, reason)
-        print(segments[0])
-        print()
-        print(segments[1])
-        print()
-        print(segments[2])
-        print()
-        print(segments[3])
+                next_point = self.find_next_switch_point(segments[0][-1])
 
-        """
+                #print(next_point)
+                #work_backwards
+                if next_point != False:
+                    seg, _, reason= self.integrate_motion_time_optimal(next_point[0], step_size, "L", 'backwards')
+                    seg.reverse()
+                    combined_trajectories1, switch_point1 = self.find_switch_point(segments[0], seg, step_size)
+                    
+                    #work forwards
+                    seg, _, reason= self.integrate_motion_time_optimal(next_point[0], step_size, "U", 'forwards')
+                    combined_trajectories2, switch_point2 = self.find_switch_point(segments[0], seg, step_size)
+                
+                    #combined_trajectories, switch_point3 = self.find_switch_point(combined_trajectories1, combined_trajectories2, step_size)
+                    if switch_point2 != False:
+                        print("path found")
+                        trajectory = combined_trajectories
+                    else:
+                        print("no valid path found")
+                else:
+                    print("no valid path found")
+        else:
+            print("something went wrong but idk what")
+
+        return trajectory, switch_point#switch_points     
+
+    def find_switch_point(self, seg1, seg2, step_size):
 
         
-        intersection = self.find_intersections(segments[-2], segments[-1], step_size)
-        #print()
-        #print(intersection[0])
-        switch_points.append(intersection[0])
+        switching_point_not_found = True
+        switching_point = False
+        const = step_size/2
+        seg_1_index = 0
+        seg_2_index = 0
         
-        #t1 = self.connect_trajectories(segments[1:2],  switch_points[0])        
-        #t2 = self.connect_trajectories([[t1], [segments[2]]],  switch_points[1])   
-        #t3 = self.connect_trajectories([[t2], [segments[3]]],  switch_points[2]) 
+        while(switching_point_not_found and seg_2_index<len(seg2)):
+            
+            seg_1_index = 0
+            for el in seg1:
+                #print(el[0], seg2[i][0], i)
+                difference_x = el[0] - seg2[seg_2_index][0]
+                difference_y = el[1] - seg2[seg_2_index][1]
+                seg_1_index = seg_1_index + 1
+                if abs(difference_x) < const and abs(difference_y) < const:
+                    switching_point_not_found = False
+                    switching_point = el
+                    break
+            
+            seg_2_index = seg_2_index + 1
         
-        #connect each segment list together in a single list
         
-        trajectory = [x for seg in segments for x in seg]
-        #[(0,0)]
-        return trajectory, switch_points     
+        if switching_point_not_found == False:
+            #print((seg_1_index, seg_2_index), switching_point)
+            #take last point on seg1
+            point1 = seg1[seg_1_index]
+            #print("hehe", seg1[seg_1_index], seg2[seg_2_index])
+            #ensure the the trajectory is continuous
+            while (seg2[seg_2_index][0] < point1[0]):
+                seg_2_index = seg_2_index + 1
+                
+            #print("ho", seg1[seg_1_index], seg2[seg_2_index])
+                
+            combined_trajectories = seg1[0:seg_1_index] + seg2[seg_2_index:]
+            return combined_trajectories, [switching_point]
+        else:
+            return False, False
+            
         
+    def find_next_switch_point(self, current_point):
+        
+        boundry_points = self.boundry_points
+        
+        s_val = current_point[0]
+        
+        boundry_index=0
+        #find the point on the boundry next to where the boundy is intersected
+        while(boundry_points[boundry_index][0] < s_val):
+            boundry_index = boundry_index + 1
+        
+
+        same = False
+        #increment forward and find where the velocity vector becomes a tangent to the boundry
+        while(boundry_index < len(boundry_points)-1):
+            
+            #get current and next point
+            current_b_point = boundry_points[boundry_index]
+            next_b_point = boundry_points[boundry_index+1]
+            
+            #calculate midpoint
+            midpoint = ((current_b_point[0] +  next_b_point[0])/2, (current_b_point[1] +  next_b_point[1])/2) 
+
+            #calculate boundry gradiant
+            boundry_gradient = (next_b_point[1] - current_b_point[1])/(next_b_point[0] - current_b_point[0])
+            
+            #get L so that the tangent vector can be calculated
+            L, _ = self.calc_upper_lower_bound_values(midpoint)
+            velocity_gradient = L/midpoint[1]
+            
+            #get value to compare gradient
+            gradient_difference = boundry_gradient - velocity_gradient
+            
+            #check if the gradient is similar
+            if abs(gradient_difference) < 0.2 :
+                #if they are the same break and save point
+                #print("the same")
+                same = True
+                break
+            else:
+                #print("not the same")
+                boundry_index = boundry_index + 1 # increment bounry index counter
+            #print(current_b_point, midpoint, next_b_point)
+            #print(boundry_gradient, velocity_gradient , gradient_difference)
+            
+        if same == True:
+            #go a little bit below the boundry for wiggle room say 5%
+            tangent_point = [(current_point[0], 0.95*current_point[1])]
+            return tangent_point
+        else:
+            return False
         
     def integrate_motion_time_optimal(self, pos, step_size, acceleration_choice, direction="backwards"):
         """
@@ -224,8 +254,9 @@ class path_dynamics_controller():
             if acceleration_choice == "U":
                 up_down_acc = U
             elif acceleration_choice == "L":
-                 up_down_acc = L           
+                 up_down_acc = L 
             
+            #print(L, U)
             if direction == "backwards":
                 delta_s, delta_sd = self.calc_change_s_sd(-sd, -up_down_acc, step_size)#integrate backwards
             elif direction == "forwards":
@@ -265,124 +296,6 @@ class path_dynamics_controller():
         return trajectory, boundries, reason
 
         
-    def find_intersections(self, seg1, seg2, step_size):
-        """
-        this method takes in two lists of points and decides if they intersect
-        Arguments:
-            seg1 & seg2 - list of tuples [(x1, y1), ... , (xn, yn)]
-        return:
-                        
-        """
-        c = 5 #varioble to tue intersection speration
-        
-        i = 0
-        j = 0
-        
-        seg1_section = []
-        seg2_section = []
-        
-        
-        while(i < len(seg1)):
-        
-            while(j < len(seg2)):
-                
-                seperation = sqrt((seg1[i][0] - seg2[j][0])**2 + (seg1[i][1] - seg2[j][1])**2)
-                
-                
-                if seperation < c*step_size:
-                                    
-                    if len(seg1_section) == 0:
-                        seperation_list = [seperation]
-                        seg1_section = [seg1[i]]
-                        seg2_section = [seg2[j]]
-                        
-                    else:
-                        seperation_list.append(seperation)
-                        seg1_section.append(seg1[i])
-                        seg2_section.append(seg2[j])
-
-                    #print(seperation, seg1[i], seg2[j])
-                
-                j = j + 1
-            
-            
-            j = 0
-            i = i + 1
-
-
-        #val, idx = min((val, idx) for (idx, val) in enumerate(seperation_list))
-        try:
-            index_min = np.argmin(seperation_list)#get the closest points
-            return [seg1_section[index_min]]
-        except:
-            return 0 #no intersections found
-        
-        #raise Exception("lines do not intersect")
-            
-        #print(val, idx)
-        #print(seg1_section)
-        #print("ewfbiuewrbgerbiuogrvb")
-        #print(seg2_section)
-        
-        #x, p1 = fit_curve(seg1_section)
-        #plt.plot(x,p1)
-        
-        #x, p2 = fit_curve(seg2_section)
-        #plt.plot(x,p1)
-        
-        
-        #point = intersection(p1,p2)
-        
-        #plt.plot(point, 'or',ms=10)
-        
-        #plt.show()
-
-
-    def connect_trajectories(self, segs, intersection):
-        """
-        This method takes in a couple different segments and an intersection point
-            arguments [[seg_1],[seg_2]]    
-        
-        return
-            trajectory - [(s1,sd1), ... , (sn, sdn) ]
-        
-        """
-        #print(intersection)
-        
-        i = 0
-        j = 0
-        trajectory = []
-        not_finished = True
-        
-        while(not_finished):
-            
-            if len(trajectory) == 0:
-                trajectory = [segs[j][i]]          
-            else:
-                trajectory.append(segs[j][i])   
-            
-            
-            i = i + 1
-                        
-            #if we pass the intersection point
-            if j == 0:
-                if segs[j][i][0] >  intersection[0][0]:
-                    j = j + 1 
-                    i = 0
-                    #increment i until interse4ction point
-                    while segs[j][i][0] <  intersection[0][0]:
-                        i = i + 1
-                        
-            
-            #print(i, j, segs[j][i][0])
-            if segs[j][i][0] == 1:
-                not_finished = False
-                    
-                    
-                    
-        
-        return trajectory
-
 
 
     def calc_change_s_sd(self, s_vel, sd_vel, step_size):
@@ -419,29 +332,6 @@ class path_dynamics_controller():
 
         return delta_s, delta_sd
 
-    
-    def dsd_ds(self, sd, sdd):
-        """
-        Function to calculate how d(sdot)/ds, this will essentially decide
-        on the next s s dot coorcinate of any control algorithm applied 
-        
-        Arguments:
-            sd -  ds/dt
-            sdd - d^2s/dt^2
-        return
-            dsd/ds 
-        """
-        
-        
-        dsd_ds = abs(sqrt(sd**2 + sdd**2))
-        
-        #choose -ve square root
-        if sdd < 0:
-            dsd_ds = -1*(dsd_ds)
-            
-        return dsd_ds
-  
-        
 
     def calc_upper_lower_bound_values(self, point):
         """

@@ -61,7 +61,10 @@ class two_dof_planar_robot(pd, pdc, rdv):
         constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
-        super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd, self.qd)
+        #super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd, self.qd)
+        pd. __init__(pd, self.M, self.C, self.g, self.q1, self.q2, \
+                     self.q1d, self.q2d, self.q1dd, self.q2dd,constants_to_sub,\
+                     self.s, self.sd, self.sdd, self.qd,)
         
     def dynamics(self):
         
@@ -249,6 +252,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
         #qs = q1s, q2s
         return qs
         
+    
         
     def joint_space_straight_line(self, start, end):
         """
@@ -265,7 +269,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
         q2s = start[1] - self.s*(start[1] - end[1])   
         
         qs = [q1s, q2s]
-        #print(qs)
+
         return qs
         
     def simulate_trajectory(self, qs, increment=0.1):
@@ -275,8 +279,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
             increment - set increment size
             
         return:
-            
-            
+
         """
         s = 0
         coordinates = []
@@ -317,33 +320,33 @@ class two_dof_planar_robot(pd, pdc, rdv):
                                      save=False):
 
         if plot_q1_against_s[0] == 1:
-            rdv.plot_q1_against_s(self, self.s_axisq1, save, 1, plot_q1_against_s[1])
+            rdv.plot_q1_against_s(rdv, self.s_axisq1, save, 5, plot_q1_against_s[1])
 
         if plot_q2_against_s[0] == 1:
-            rdv.plot_q2_against_s(self, self.s_axisq2, save, 5, plot_q2_against_s[1])
+            rdv.plot_q2_against_s(rdv, self.s_axisq2, save, 5, plot_q2_against_s[1])
             
         if plot_q1_against_q2[0] == 1:
-            rdv.plot_q1_against_q2(self, self.coordinates_q1_q2,save, 5, plot_q1_against_q2[1])
+            rdv.plot_q1_against_q2(rdv, self.coordinates_q1_q2,save, 5, plot_q1_against_q2[1])
             
         if plot_motion_x_y[0] == 1:
-            rdv.plot_robot_motion_x_y(self, self.x_y_coordinates, self.s_axisq1 ,save, 5,plot_motion_x_y[1])
+            rdv.plot_robot_motion_x_y(rdv, self.link_lengths, self.x_y_coordinates, self.s_axisq1 ,save, 5,plot_motion_x_y[1])
         
         if plot_end_effector_motion[0] ==1:
-            rdv.plot_end_effector_motion_x_y(self, self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
+            rdv.plot_end_effector_motion_x_y(rdv, self.link_lengths,self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
         
         if make_robot_motion_gif[0] == 1:
             #just testing out making a gif
             path = "plots/gifs/robot_motion_construction_images/"
-            rdv.plot_each_motion_stage_x_y(self, self.x_y_coordinates, self.s_axisq1, path ,save, 5)
+            rdv.plot_each_motion_stage_x_y(rdv, self.link_lengths,self.x_y_coordinates, self.s_axisq1, path ,save, 5)
                         
             path_backslashes = "plots\\gifs\\robot_motion_construction_images\\"
             save_offset = "plots\\gifs\\"
             filename = make_robot_motion_gif[2]
-            gif_duration = make_robot_motion_gif[1]
-            png_to_gif.compile_gif(path_backslashes, save_offset,filename)
+            frame_duration = make_robot_motion_gif[1]
+            png_to_gif.compile_gif(path_backslashes, save_offset, filename, frame_duration)
  
         if sub_plot_plot_q1_against_q2_and_motion_x_y[0] == 1:
-            rdv.sub_q1_q2_v_robot_motion(self, self.coordinates_q1_q2, self.x_y_coordinates, save, 5,sub_plot_plot_q1_against_q2_and_motion_x_y[1])
+            rdv.sub_q1_q2_v_robot_motion(rdv, self.coordinates_q1_q2, self.x_y_coordinates, save, 5,sub_plot_plot_q1_against_q2_and_motion_x_y[1])
         
         
     def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
@@ -388,13 +391,13 @@ class two_dof_planar_robot(pd, pdc, rdv):
         
         #calculate bounds based on the path dynamics
         self.bounds = pd.calc_bounds(self, Ms, Cs, gs)
-        #print(bounds)
-                #define grid
-        #s_lim = [0, 1, 0.1]
-        #sd_lim = [0,10, 0.1]
-        self.admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lims, sd_lims)
 
-        
+
+
+
+        self.admissable_region, self.boundry_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
+        #rdv.generate_state_space_plot(self, self.boundry_points )
+        #print(self.boundry_points)
         #pd.generate_state_space_plot(self, self.admissable_region)
         
         #get big list of tangent cones corresponding to ead point in the state space 
@@ -412,7 +415,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
         
 
  
-    def generate_time_optimal_trajectory(self, plot_trajectory=False):
+    def generate_time_optimal_trajectory(self, initial_coordinate, final_coordinate ,plot_trajectory=False):
         """
         method to take steps neccesary to design a time opeitmal control trajectory
         
@@ -425,28 +428,23 @@ class two_dof_planar_robot(pd, pdc, rdv):
 
         #plot = pd.generate_state_space_plot(self, self.admissable_region, 1)
         #plot.show()
-   
-        start_position =  (0,0)
-        end_position = (1,0)
+
         
-        pdc.__init__(self, self.bounds, self.s, self.sd)
+        pdc.__init__(pdc, self.bounds, self.boundry_points, self.s, self.sd)
         
         
         Ek_q = pd.get_machine_kinetic_energy_q(self)[0]
-
+        #get it in terms of s            
         Ek_s = Ek_q.subs([(self.q1, self.qs[0]), (self.q2, self.qs[1]), (self.q1d, self.qds[0]), (self.q2d, self.qds[1])])
-        
-        #print(pdc.evaluate_Ek_s(self, Ek_s, 0.5,5))
-        
-        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, start_position, end_position)
-        
-        if plot_trajectory==True:
-            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, True)
-        return trajectory
+
+        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, initial_coordinate, final_coordinate)
+        self.s_plane_control_trajectory = trajectory
+        if plot_trajectory==True and trajectory != False:
+            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, False)
         
     def generate_time_optimal_trajectory_plots(self, trajectory, intersection_point, save=True):
 
-        rdv.generate_control_algorithm_plot(self, self.admissable_region, trajectory, intersection_point, save, 0.5)
+        rdv.generate_control_algorithm_plot(rdv, self.admissable_region, trajectory, intersection_point, save, 0.5)
         #self.generate_velocity_bound_vector_plot(trajectory, save)
         
     
