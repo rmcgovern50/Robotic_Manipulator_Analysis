@@ -18,23 +18,65 @@ class path_dynamics_controller():
     the robot along the state space. I need to 
     """
     
-    def __init__(self, bounds, boundry_points,s, sd):
+    def __init__(self, manipulator):
         #print("initialised")
         #pass        
-        self.bounds = bounds
-        self.boundry_points = boundry_points
-        self.s = s 
-        self.sd = sd
+        self.bounds = manipulator.bounds
+        self.boundary_points = manipulator.boundary_points
+        self.s = manipulator.s 
+        self.sd = manipulator.sd
+        
 
 
 
-        #print(bounds)
-        #print("yeeeeeee")
+    def safe_time_optimal_control(self, initial, final):
+        """
+        Method to navigate the admissible region without violating a potential energy constrain in addition to the
+        constraints given by the actuator
+        
+        Arguments:
+            initial- (s_start, sd_start) initial position
+            final - (s_end, sd_end) - final position
+            
+            implicit
+                bounds -  [(B01,B02, Ms0),(B21,B22, Ms1),(B31,B32, Ms2),...(Bn1, Bn2, Msn)]  expressions for the actuator limits
+                B01 is bound 1 on actuator zero
+                B02 is bound 2 on actuator zero
+                Ms0 is the value that decides the upper and lower at some s, sd number
+                
+                energy bounds
+            
+        return:
+            trajectory - [(s1,sd1), ... , (sn, sdn) ]
+            trajectory from s_start ---> s_end
+            switch points = [(s1, sd1), ..., (sm, sdm)]
+        """
+        
+        
+        
+        
+        
+        print("this is some function")
+        """
+        bang bang trajectory
+        
+        integrate back from final until bounds violated or s < 0
+        
+        integrate forward from initial until bounds violated or s > 1
+        
+        check for intersection
+            if intersection found save it and return answer
+            
+            if not - fail
+        
+        
+        """
+        print("return answer")
 
-  
+
     def simple_time_optimal_controller(self, initial, final):
         """
-        This is a method that will output a valid trajectoy of (s, sd) points 
+        This is a method that will output a valid trajectory of (s, sd) points 
         from which a joint torque input sequence can be derived
         It works by using a knowledge of actuator limits in the state space
         Given an intial and final condition the algorithm will try and find the fastest trajectory 
@@ -76,6 +118,7 @@ class path_dynamics_controller():
             combined_trajectories, switch_point = self.find_switch_point(segments[0], segments[1], step_size)
             if switch_point != False:
                 print("path found")
+                trajectory = combined_trajectories
             else:
                 print("no valid path")
 
@@ -267,7 +310,6 @@ class path_dynamics_controller():
             pos = (s, sd)
             #print(pos)
 
-                        #print(L, U)
             
             if L > U or s < 0 or s > 1 or sd < 0:
                 integration_complete = True
@@ -286,13 +328,7 @@ class path_dynamics_controller():
                 trajectory.append(pos)                
             #print(trajectory)
             i=i+1
-        #print('i=',i, )
-        #print(len(trajectory))
-        #print("==================")
-        #print(len(boundries))
-        #print("==================")
-        #print(boundries)
-        #print(trajectory)
+
         return trajectory, boundries, reason
 
         
@@ -393,18 +429,24 @@ class path_dynamics_controller():
         
         
         return Ek_val
+    def generate_time_optimal_trajectory(self, initial_coordinate, final_coordinate):
+        """
+            method to take steps neccesary to design a time opeitmal control trajectory
+            
+            return:
+                trajectory - [(s1, sd1),...,(sn,sdn) ]
+                switching_points - [(swx1, swy1),...,(swxn,swyn)]
+        """
 
 
 
+        #Ek_q = pd.get_machine_kinetic_energy_q(self)[0]
+        #get it in terms of s            
+        #Ek_s = Ek_q.subs([(self.q1, self.qs[0]), (self.q2, self.qs[1]), (self.q1d, self.qds[0]), (self.q2d, self.qds[1])])
 
+        trajectory, switching_points = self.simple_time_optimal_controller(initial_coordinate, final_coordinate)
 
-
-
-
-
-
-
-
+        return trajectory, switching_points
 
 
 

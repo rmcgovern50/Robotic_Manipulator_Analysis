@@ -5,10 +5,10 @@ https://pythonprogramming.altervista.org/png-to-gif/
 from PIL import Image
 import glob
 import os
+import datetime as dt
 
 
-
-def compile_gif(offset_path = "robot_motion_construction_images\\", save_offset="", filename="png2gif", frame_duration=300):
+def compile_gif(offset_path = "robot_motion_construction_images\\", save_offset="", filename="png2gif", frame_duration=300, simulation_begin_time="NA"):
 
     
     # Create the frames
@@ -51,7 +51,7 @@ def compile_gif(offset_path = "robot_motion_construction_images\\", save_offset=
         frames.append(new_frame)
      
         # Save into a GIF file that loops forever
-        frames[0].save(save_offset+filename+".gif", format='GIF',
+        frames[0].save(save_offset+filename+ simulation_begin_time +".gif", format='GIF',
                        append_images=frames[1:],
                        save_all=True,
                        duration=frame_duration, loop=0)

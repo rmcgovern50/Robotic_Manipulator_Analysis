@@ -7,13 +7,19 @@ This file contains a class that will be used to visualise different parts of the
 """
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import math as m
+import png_to_gif
+import datetime as dt
+
 
 class two_dof_robot_data_visualisation():
     
+    def __init__(self, current_time):
+        self.time = current_time
     
-    def generate_state_space_plot(self, admissable_region,  save=True, marker_size=1, filepath="addmissable_plot"):
+    def generate_state_space_plot(self, admissible_region,  save=True, marker_size=1, filepath="admissible_plot"):
         """
         this function simply takes in a list of tuples and plots them
         Arguments:
@@ -23,8 +29,8 @@ class two_dof_robot_data_visualisation():
             
         """
         
-        x_val = [x[0] for x in admissable_region]
-        y_val = [x[1] for x in admissable_region]
+        x_val = [x[0] for x in admissible_region]
+        y_val = [x[1] for x in admissible_region]
         
         if save == True:
             fig = plt.figure(dpi=600)
@@ -37,7 +43,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
         if save == True:
-            fig.savefig("plots/"+filepath)
+            fig.savefig("plots/admissible_region/"+filepath + self.time)
             plt.close()
         else:
             plt.show()
@@ -45,7 +51,7 @@ class two_dof_robot_data_visualisation():
 
     def generate_control_algorithm_plot(self, admissable_region, \
                                         control_trajectory, switching_points, \
-                                        save=True, marker_size=1, filepath="s_sdot_plane.png"):
+                                        save=True, marker_size=1, filepath="s_sdot_plane"):
         """
         this function simply takes in two lists of tuples and plots them
         Arguments:
@@ -78,7 +84,7 @@ class two_dof_robot_data_visualisation():
         plt.plot(x2_val, y2_val, 'or',ms=1*marker_size, color='b', label='controlled trajectory' )
         
         if plot_switch == True:
-            plt.plot(x3_val, y3_val, 'or',ms=5*marker_size, color='c', label='switching points')
+            plt.plot(x3_val, y3_val, 'or',ms=10*marker_size, color='c', label='switching points')
         
         plt.title("Plot of robot trajectory through admissable region")
         plt.legend()
@@ -86,7 +92,7 @@ class two_dof_robot_data_visualisation():
         plt.ylabel("$\dot{s}$")
         #print("hvsbhvefb")
         if save == True:
-            fig.savefig("plots/"+filepath)
+            fig.savefig("plots/control_trajectories/"+filepath + self.time)
             plt.close()
         else:
             plt.show()
@@ -114,7 +120,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("s")
         plt.ylabel("q1 (degrees)")
         if save == True:
-            fig.savefig("plots/" + file_name)
+            fig.savefig("plots/q1_vs_s/" + file_name + self.time)
             plt.close()
         else:
             plt.show()
@@ -141,7 +147,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("s")
         plt.ylabel("q2 (degrees)")
         if save == True:
-            fig.savefig("plots/" + file_name)
+            fig.savefig("plots/q2_vs_s/" + file_name + self.time)
             plt.close()
         else:
             plt.show() 
@@ -166,7 +172,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("q1 (degrees)")
         plt.ylabel("q2 (degrees)")
         if save == True:
-            fig.savefig("plots/" + file_name)
+            fig.savefig("plots/q1_vs_q2/" + file_name + self.time)
             plt.close()
         else:
             plt.show()
@@ -228,7 +234,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("x (metres)")
         plt.ylabel("y (metres)")
         if save == True:
-            fig.savefig("plots/"+file_name)
+            fig.savefig("plots/workspace_motion/"+file_name + self.time)
             plt.close()
         else:
             plt.show()    
@@ -264,7 +270,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("x (metres)")
         plt.ylabel("y (metres)")
         if save == True:
-            fig.savefig("plots/"+file_name)
+            fig.savefig("plots/end_effector_motion/"+file_name + self.time)
             plt.close()
         else:
             plt.show()      
@@ -338,13 +344,10 @@ class two_dof_robot_data_visualisation():
         This method will produce a subplot array containing q1vq2 and the motion of the robot in the workspace
         """
         pass
-        
+
     
     def plot_bound_vectors(self, evaluated_bounds, save=True, marker_size=1, filepath="bound_plot"):
-        """
-        Arguments:
-            evaluated_bound= [(s1, sd1, L1, U1),...,(sn, sdn, Ln, Un) ]
-        """
+
         s = [x[0] for x in evaluated_bounds]
         sd = [x[1] for x in evaluated_bounds]
         L = [x[2] for x in evaluated_bounds]
@@ -376,8 +379,183 @@ class two_dof_robot_data_visualisation():
         plt.xlim(left=0) #xmin is your value
 
         if save == True:
-            fig.savefig("plots/"+filepath)
+            fig.savefig("plots/"+filepath + dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S'))
+            plt.close()
+        else:
+            plt.show()
+
+    def plot_simulation_parameters(self, s_axisq1, s_axisq2, coordinates_q1_q2, link_lengths, x_y_coordinates, \
+                                     plot_q1_against_s=[0, "q1 v s"],\
+                                     plot_q2_against_s=[0, "q2 v s"],\
+                                     plot_q1_against_q2=[0, "q1, vs q2"],\
+                                     plot_motion_x_y=[0, "workspace motion"],\
+                                     plot_end_effector_motion=[0, "end effector motion"],\
+                                     make_robot_motion_gif=[0, 50, "robot_motion"],\
+                                     sub_plot_plot_q1_against_q2_and_motion_x_y =[0, "sub plots q1vq2, workspace"],\
+                                     save=False):
+        """
+        method to generate many plots
+        """
+       
+        if plot_q1_against_s[0] == 1:
+            self.plot_q1_against_s(s_axisq1, save, 5, plot_q1_against_s[1])
+        
+        if plot_q2_against_s[0] == 1:
+            self.plot_q2_against_s(s_axisq2, save, 5, plot_q2_against_s[1])
+        
+        if plot_q1_against_q2[0] == 1:
+            self.plot_q1_against_q2(coordinates_q1_q2, save, 5, plot_q1_against_q2[1])
+        
+        if plot_motion_x_y[0] == 1:
+            self.plot_robot_motion_x_y(link_lengths, x_y_coordinates, s_axisq1 ,save, 5,plot_motion_x_y[1])
+        
+        if plot_end_effector_motion[0] ==1:
+            self.plot_end_effector_motion_x_y(link_lengths, x_y_coordinates, s_axisq1, save, 5 , plot_end_effector_motion[1])
+        
+        if make_robot_motion_gif[0] == 1:
+            #just testing out making a gif
+            path = "plots/gifs/robot_motion_construction_images/"
+            self.plot_each_motion_stage_x_y(link_lengths, x_y_coordinates, s_axisq1, path ,save, 5)
+                        
+            path_backslashes = "plots\\gifs\\robot_motion_construction_images\\"
+            save_offset = "plots\\gifs\\"   
+            filename = make_robot_motion_gif[2]
+            frame_duration = make_robot_motion_gif[1]
+            png_to_gif.compile_gif(path_backslashes, save_offset, filename, frame_duration, self.time)
+         
+        if sub_plot_plot_q1_against_q2_and_motion_x_y[0] == 1:
+            self.sub_q1_q2_v_robot_motion(coordinates_q1_q2, x_y_coordinates, save, 5,sub_plot_plot_q1_against_q2_and_motion_x_y[1])
+
+
+
+
+    def plot_potential_collision_energies_s(self, potential_collision_energy, save=True,  marker_size=1, filepath="Ek_vs_s"):
+        """
+        Method to produce a plot of s vs potential energy dissapated in a collision
+        """
+       
+        x_val = [x[0] for x in potential_collision_energy]
+        y_val = [y[2] for y in potential_collision_energy]
+        
+        
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+            
+        ax1 = plt.subplot2grid((1,1),(0,0))
+        
+        ax1.plot(x_val, y_val,'or',ms=marker_size)
+        plt.grid(color='black', linestyle='-', linewidth=0.5)
+        plt.xlabel("s")
+        plt.ylabel("$E_k$")
+        if save == True:
+            fig.savefig("plots/"+ "Ek_vs_s/" +filepath + self.time)
+            plt.close()
+        else:
+            plt.show()
+        
+    def plot_potential_collision_energies_sdot(self, potential_collision_energy, save=True,  marker_size=1, filepath="Ek_vs_sdot"):
+        """
+        Method to produce a plot of s vs potential energy dissapated in a collision
+                Arguments:
+            potential_collision_energy = [(s1, sd1, Ek1),...(sn, sdn, Ekn)]
+        
+        """
+       
+        x_val = [x[1] for x in potential_collision_energy]
+        y_val = [y[2] for y in potential_collision_energy]
+        
+        
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+            
+        ax1 = plt.subplot2grid((1,1),(0,0))
+        
+        ax1.plot(x_val, y_val,'or',ms=marker_size)
+        plt.grid(color='black', linestyle='-', linewidth=0.5)
+        plt.xlabel("$\dot{s}$")
+        plt.ylabel("$E_k$")
+        if save == True:
+            fig.savefig("plots/"+ "Ek_vs_sdot/" +filepath + self.time)
             plt.close()
         else:
             plt.show()
             
+            
+
+    def plot_potential_collision_energies_s_sdot(self, potential_collision_energy, save=True,  marker_size=1, filepath="Ek_vs_s_sdot"):
+        """
+        Method to produce a plot of s vs potential energy dissapated in a collision
+        Arguments:
+            potential_collision_energy = [(s1, sd1, Ek1),...(sn, sdn, Ekn)]
+        """
+       
+        x_val = [x[0] for x in potential_collision_energy]
+        y_val = [x[1] for x in potential_collision_energy]
+        z_val = [y[2] for y in potential_collision_energy]
+        
+         
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+            
+        ax1 =  fig.add_subplot(111, projection='3d')
+        
+        ax1.plot(x_val, y_val, z_val) 
+        
+        #ax1.plot(x_val, y_val,'or',ms=marker_size)
+        #plt.grid(color='black', linestyle='-', linewidth=0.5)
+        plt.xlabel("s")
+        plt.ylabel("$\dot{s}$")
+        ax1.set_zlabel("$E_k$")
+        if save == True:
+            fig.savefig("plots/"+ "Ek_vs_s_sdot/" +filepath + self.time)
+            plt.close()
+        else:
+            plt.show()
+            
+            
+
+    def plot_potential_collision_energies_s_sdot_surf(self, potential_collision_energy, save=True,  marker_size=1, filepath="Ek_vs_s_sdot_contour"):
+        """
+        function to take in data of the common format of this toolbox and convert it to produce surface plots
+        on matplotlib
+        Arguments:
+            potential_collision_energy = [(s_1, sd_1, Ek1),... , 
+                                          (s_n, sd_n, Ekn)]
+            
+        return:
+
+        """
+        
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+
+        ax =  fig.add_subplot(111, projection='3d')
+  
+        x_val = [x[0] for x in potential_collision_energy]
+        y_val = [x[1] for x in potential_collision_energy]
+        z_val = [y[2] for y in potential_collision_energy]
+        
+        ax.plot(x_val, y_val, z_val) 
+        
+        plt.grid(color='black', linestyle='-', linewidth=0.5)
+        plt.xlabel("s")
+        plt.ylabel("$\dot{s}$")
+        ax.set_zlabel("$E_k$")
+        
+        plt.xticks(np.arange(min(x_val), max(x_val)+0.25, 0.25))
+        plt.yticks(np.arange(min(y_val), max(y_val)+5, 5))
+        
+        if save == True:
+            fig.savefig("plots/"+ "Ek_vs_s_sdot_surface/" +filepath + self.time)
+            plt.close()
+        else:
+            plt.show()
+        

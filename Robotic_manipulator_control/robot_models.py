@@ -6,25 +6,24 @@ These are all child classes the the path_dynamics_analysis class which helps to
 visualise the state space in a general way
 """
 
-from sympy import symbols, Matrix, sin, cos, acos, asin, atan2, sqrt, pprint
-
+from sympy import symbols, Matrix, sin, cos, acos, asin, atan2, sqrt, pprint, diff
 
 from path_dynamics_analysis import path_dynamics as pd
-from path_dynamics_control import path_dynamics_controller as pdc
-from robot_data_visualisation import two_dof_robot_data_visualisation as rdv
+#from path_dynamics_control import path_dynamics_controller as pdc
+#from robot_data_visualisation import two_dof_robot_data_visualisation as rdv
 
 import math as m
-
+import my_math as mm
+import numpy as np
 
 #from my_visualising import simple_plot
 import my_visualising as mv
 import my_sorting as ms
-import png_to_gif
 
 import matplotlib.pyplot as plt
 
 
-class two_dof_planar_robot(pd, pdc, rdv):
+class two_dof_planar_robot(pd):
     pass
     """
     This class is for the case specific parts of revolute slide robot
@@ -32,7 +31,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
     calculate admissable regions of the state space along a path
     """
     
-    def __init__(self, joint_mass, link_lengths, joint_limits):
+    def __init__(self, joint_mass, link_lengths, joint_limits, current_time):
         """
         Initialise the robot with it's parameters
         Arguments: 
@@ -43,7 +42,7 @@ class two_dof_planar_robot(pd, pdc, rdv):
         """
         self.type = "revolute prismatic robot (polar robot)"
         self.link_lengths = link_lengths
-        
+        self.joint_masses = joint_mass
         
         self.s, self.sd, self.sdd = symbols('s sd sdd')
         self.joint_limits = joint_limits
@@ -118,21 +117,26 @@ class two_dof_planar_robot(pd, pdc, rdv):
         #pprint(self.C * self.qd)
         return self.M, self.C, self.g
     
-    def check_if_dynamics_valid(self):
-        
-        pprint(self.M)
-        print("=======================")
-        
-        Matrix1 = self.M - 2*self.C
-        pprint(Matrix1)
-        print("=======================")
-        
-        
-        Matrix1transpose = Matrix1.transpose()
-        
-        pprint(Matrix1 + Matrix1transpose)
     
+    def end_effector_Jacobian(self):
+        """
+            Simple methodf for evaluating the Jacobian of the end effector of the manipulator
+            \dot{x} = J \dot{q}
+            
+            return -
+            J = 3x2 matrix describing the non linear transformation from joint 
+                velocities to end effectors linear velocity
+        """
     
+        l1 = self.l1
+        l2 = self.l2   
+        q1 = self.q1
+        q2 = self.q2
+        
+        self.J_linear = Matrix([[-l1*sin(q1) - l2*sin(q1+q2) , -l2*sin(q1+q2)]\
+                                ,[l1*cos(q1) + l2*cos(q1+q2),  l2*cos(q1 + q2)]\
+                                ,[0,0]])
+        return self.J_linear
     
     def forward_kinematics(self, joints):
         """
@@ -246,10 +250,6 @@ class two_dof_planar_robot(pd, pdc, rdv):
         qs = self.symbolic_inverse_kinematics(Xs)
         
 
-        #get m
-        #print("")
-        
-        #qs = q1s, q2s
         return qs
         
     
@@ -308,47 +308,34 @@ class two_dof_planar_robot(pd, pdc, rdv):
             i = i + 1
 
 
+    def get_direction_unit_vector(self, line_definition):
+        """
+        Parameters
+        ----------
+        line_definition : list
+            [(x1, y1), (x2, y2)] = [(start_coordinate), (end_coordinate)]
 
-    def plot_simulation_parameters(self,
-                                     plot_q1_against_s=[0, "q1 v s"],\
-                                     plot_q2_against_s=[0, "q2 v s"],\
-                                     plot_q1_against_q2=[0, "q1, vs q2"],\
-                                     plot_motion_x_y=[0, "workspace motion"],\
-                                     plot_end_effector_motion=[0, "end effector motion"],\
-                                     make_robot_motion_gif=[0, 50, "robot_motion"],\
-                                     sub_plot_plot_q1_against_q2_and_motion_x_y =[0, "sub plots q1vq2, workspace"],\
-                                     save=False):
+        Returns
+        -------
+        [xdir, ydir, zdir]
+        unit vector pointing from start to end
 
-        if plot_q1_against_s[0] == 1:
-            rdv.plot_q1_against_s(rdv, self.s_axisq1, save, 5, plot_q1_against_s[1])
-
-        if plot_q2_against_s[0] == 1:
-            rdv.plot_q2_against_s(rdv, self.s_axisq2, save, 5, plot_q2_against_s[1])
-            
-        if plot_q1_against_q2[0] == 1:
-            rdv.plot_q1_against_q2(rdv, self.coordinates_q1_q2,save, 5, plot_q1_against_q2[1])
-            
-        if plot_motion_x_y[0] == 1:
-            rdv.plot_robot_motion_x_y(rdv, self.link_lengths, self.x_y_coordinates, self.s_axisq1 ,save, 5,plot_motion_x_y[1])
+        """
         
-        if plot_end_effector_motion[0] ==1:
-            rdv.plot_end_effector_motion_x_y(rdv, self.link_lengths, self.x_y_coordinates, self.s_axisq1, save, 5 , plot_end_effector_motion[1])
-        
-        if make_robot_motion_gif[0] == 1:
-            #just testing out making a gif
-            path = "plots/gifs/robot_motion_construction_images/"
-            rdv.plot_each_motion_stage_x_y(rdv, self.link_lengths,self.x_y_coordinates, self.s_axisq1, path ,save, 5)
-                        
-            path_backslashes = "plots\\gifs\\robot_motion_construction_images\\"
-            save_offset = "plots\\gifs\\"
-            filename = make_robot_motion_gif[2]
-            frame_duration = make_robot_motion_gif[1]
-            png_to_gif.compile_gif(path_backslashes, save_offset, filename, frame_duration)
- 
-        if sub_plot_plot_q1_against_q2_and_motion_x_y[0] == 1:
-            rdv.sub_q1_q2_v_robot_motion(rdv, self.coordinates_q1_q2, self.x_y_coordinates, save, 5,sub_plot_plot_q1_against_q2_and_motion_x_y[1])
+        x1= line_definition[0][0]
+        x2 = line_definition[1][0]
+        y1= line_definition[0][1]
+        y2 = line_definition[1][1]        
         
         
+        distance = [x2 - x1, y2 - y1]
+        length = m.sqrt(distance[0]**2 + distance[1]**2)
+        direction = [distance[0]/length, distance[1]/length]
+        
+        return direction
+        
+        
+         
     def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
         """
         Description-
@@ -363,90 +350,90 @@ class two_dof_planar_robot(pd, pdc, rdv):
         
         return:
             region - list of tuples decribing the admissable region
-            boundry_points - list of points decribing the boundry
-            boundry expressions - list of expressions that when evaluated can get us the upper and lower limits on sdd
+            boundry_points - list of points decribing the boundary
+            boundary expressions - list of expressions that when evaluated can get us the upper and lower limits on sdd
             plt - return plot of the admissable region
         """
         
-     
-        #repeat code used externally except simple_plot
-        #print(path_straight_line)
-        #self.qs = self.joint_space_straight_line(path_straight_line[0], path_straight_line[1])#
-        #path_straight_line[0] = (1,1)
-        #path_straight_line[1] = (2,0.5)
+        #convert q to q(s)
         self.qs = self.straight_line_parameterisation(path_straight_line[0], path_straight_line[1])
  
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
         
+        #calculate the derivatives
         _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
-        #print(q, qd,qdd, dqds, d2qds2)
-
+        pd.pass_qs_qds_qdds(pd, self.qs, self.qds, self.qdds)
+        
         #get all the necessary matrices in terms of the parameterised matrices
-        Mqs, Cqs, gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
+        self.Mqs, self.Cqs, self.gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
         #print(Mqs, Cqs, gqs)
         
         #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
-        Ms, Cs, gs = pd.calc_s_matrices(self, Mqs, Cqs, gqs, dqds, d2qds2)
+        Ms, Cs, gs = pd.calc_s_matrices(self, self.Mqs, self.Cqs, self.gqs, dqds, d2qds2)
         #print(Ms, Cs, gs)
         
         #calculate bounds based on the path dynamics
         self.bounds = pd.calc_bounds(self, Ms, Cs, gs)
 
 
-
-
-        self.admissable_region, self.boundry_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
-        #rdv.generate_state_space_plot(self, self.boundry_points )
-        #print(self.boundry_points)
-        #pd.generate_state_space_plot(self, self.admissable_region)
+        self.admissible_region, self.boundary_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
         
-        #get big list of tangent cones corresponding to ead point in the state space 
-        
+        self.s_lims = s_lims
+        self.sd_lims = sd_lims
 
-        #tangent_cone = f(s, sd)
-        
-    def generate_velocity_bound_vector_plot(self, points_to_evaluate, save=False):
+    def get_potential_collision_energy(self, J, M, direction, s_sd):
         """
-        method to generate a plot of a pa
-        """
-        evaluated_bounds_to_plot = pd.evaluate_bounds(self, points_to_evaluate)
-        rdv.plot_bound_vectors(self, evaluated_bounds_to_plot, save)
-        
-
- 
-    def generate_time_optimal_trajectory(self, initial_coordinate, final_coordinate ,plot_trajectory=False):
-        """
-        method to take steps neccesary to design a time opeitmal control trajectory
-        
-        return:
-            trajectory - [(s1, sd1),...,(sn,sdn) ]
+            method to get the potential collision energy of the manipulator
+            Arguments:
+                J - jacobian of motion
+                M - mass matrix
+                direction - []driection between robot velocity and object
+                s_sd - list of points the robot passes through 
+                        [(s1, sd1), ..., (sn, sdn)]
+                
+            return:
+                energies list with corresponding s and sd point attacted
+                [(s1, sd1, e1), ..., (sn, sdn, en)]
+                
         """
 
-        #calculate admissable region
-        #admissable_region, boundry_points = self.calc_admissable(self.bounds, s_lim, sd_lim)
-
-        #plot = pd.generate_state_space_plot(self, self.admissable_region, 1)
-        #plot.show()
-
+        n = Matrix(direction)
+        energy_list = pd.evaluate_potential_collision_energy(self, J ,M, n, s_sd)
         
-        pdc.__init__(pdc, self.bounds, self.boundry_points, self.s, self.sd)
-        
-        
-        Ek_q = pd.get_machine_kinetic_energy_q(self)[0]
-        #get it in terms of s            
-        Ek_s = Ek_q.subs([(self.q1, self.qs[0]), (self.q2, self.qs[1]), (self.q1d, self.qds[0]), (self.q2d, self.qds[1])])
+        return energy_list
 
-        trajectory, intersection_point = pdc.simple_time_optimal_controller(self, initial_coordinate, final_coordinate)
-        self.s_plane_control_trajectory = trajectory
-        if plot_trajectory==True and trajectory != False:
-            self.generate_time_optimal_trajectory_plots(trajectory, intersection_point, False)
-        
-    def generate_time_optimal_trajectory_plots(self, trajectory, intersection_point, save=True):
+    def set_trajectory_energy_list(self, energy_list):
+        self.energy_list = energy_list
 
-        rdv.generate_control_algorithm_plot(rdv, self.admissable_region, trajectory, intersection_point, save, 0.5)
-        #self.generate_velocity_bound_vector_plot(trajectory, save)
-        
-    
+    def set_admissible_region_collision_energies(self, energy_list):
+        self.admissible_region_collision_energies = energy_list
 
 
-    
+    def set_simulation_data(self, control_trajectory, switching_points):
+        """
+        Method to save all the robot data in a dictionary so give a standard format that can be populated 
+        by the saved data rather than rerunning the simulation each time
+        
+
+        Returns
+        -------
+        data : Dictionary
+            All the data that needs to be saved
+        """
+        
+        data = {'admissible_region' : self.admissible_region,\
+                'admissible_region_grid': [self.s_lims, self.sd_lims],\
+                'admissible_region_collision': self.admissible_region_collision_energies,\
+                'q1_vs_s': self.s_axisq1,\
+                'q2_vs_s': self.s_axisq2,\
+                'q1_vs_q2': self.coordinates_q1_q2,\
+                'xy_coordinates': self.x_y_coordinates,\
+                'potential_collision_energy' :  self.energy_list,\
+                'control_trajectory': control_trajectory,\
+                'switching_points' : switching_points,\
+                'link_lengths' : self.link_lengths,\
+                'joint_masses' : self.joint_masses,\
+                'actuator_limits' : self.joint_limits\
+                }
+
+        return data

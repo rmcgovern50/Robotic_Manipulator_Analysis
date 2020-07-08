@@ -5,14 +5,14 @@ This is a class that will allow path dynamics to be analysed
 
 import my_math as mm# import sub_into_matrix
 import matplotlib.pyplot as plt
-from sympy import Matrix, diff, Transpose
+from sympy import Matrix, diff, Transpose, pprint
 
 
 
 class path_dynamics():
     """
-    This class will perform the calculations for analysing the admissable 
-    region of the robotic manipulators generally
+        This class will perform the calculations for analysing the admissible 
+        region of the robotic manipulators generally
     """
     
     
@@ -59,6 +59,25 @@ class path_dynamics():
         gqs = mm.sub_into_matrix(g_explicit, values_to_sub)
         
         return Mqs, Cqs, gqs
+
+    def calc_qs_Jacobian(self, Jacobian, qs, qds, qdds):
+        """
+        Method that takes in the path parameterisation as well as a jocobian of some point on the
+        manipulator and returns an explicit version in terms of s and it's derivatives'
+        Arguments:
+            qs, qds, qdds
+            
+        Return:
+            Jqs - jacobian in terms of s
+        """
+        J_explicit = mm.sub_into_matrix(Jacobian, self.constants_to_sub) 
+        
+        values_to_sub = [(self.q1, list(qs)[0]),(self.q2, list(qs)[1]), \
+                         (self.q1d, list(qds)[0]),(self.q2d, list(qds)[1]),\
+                         (self.q1dd, list(qdds)[0]),(self.q2dd, list(qdds)[1])]
+            
+        Jqs = mm.sub_into_matrix(J_explicit, values_to_sub)
+        return Jqs
 
     def path_parameterisation(self, q):
         """
@@ -308,6 +327,12 @@ class path_dynamics():
             
         return L, U
 
+    def pass_qs_qds_qdds(self, qs, qds, qdds):
+        self.qs = qs
+        self.qds = qds
+        self.qdds = qdds
+
+
 
     def evaluate_bounds(self, points_for_evaluation):
         """
@@ -332,13 +357,53 @@ class path_dynamics():
             else:
                 evaluated_points.append((s, sd, L, U))
             
-            #print(s, sd, L, U)
-
-        evaluated_points 
+ 
         return evaluated_points
 
 
+    def evaluate_potential_collision_energy(self, J, M, n, s_plane_trajectory, return_symbolic_equation=False):
+        """
+            Funtion which takes in a jacobian, mass matrix and drection of collision
+            Arguments:
+                J - jacobian of collision point
+                M - mass matrix of collision point
+                n - direction of collision
+                s_plane_trajectory - coordinates to evaluate energy 
+                                    [(s1, sd1),...,(sn, sdn)]
+                
+            returns - the list of potential collision energy values
+                        [(s1, sd1, Ek1),...,(sn, sdn, Ekn)]
+        """
+     
+        deltaEk_list = [(0,0,0)]
+        i = 0
+        
+        
+        Jqs = self.calc_qs_Jacobian(J,  self.qs, self.qds, self.qdds)
+        
+        Jqsn = n.T*Jqs
+        
+        #calculate 
+        mn_temp = Jqsn*M*(Jqsn.T)
+        xdotn = Jqsn*self.qds        
+        
+        deltaEk_symbolic=0.5*mn_temp*xdotn**2
+        
+        for ssd in s_plane_trajectory:
+            mn_explicit = mm.sub_into_matrix(mn_temp, [(self.s, ssd[0])])
+            mn = mn_explicit**-1
 
+            xdotn_explicit = mm.sub_into_matrix(xdotn, [(self.s, ssd[0]), (self.sd, ssd[1])])
+    
+            deltaEk = 0.5*mn*xdotn_explicit**2
+            if i == 0:
+                deltaEk_list[0] = (ssd[0], ssd[1], deltaEk[0])
+                i=1
+            else:
+                deltaEk_list.append((ssd[0], ssd[1], deltaEk[0]))
 
-
-
+        if return_symbolic_equation == False:
+            return deltaEk_list
+        else:
+            return 
+        
