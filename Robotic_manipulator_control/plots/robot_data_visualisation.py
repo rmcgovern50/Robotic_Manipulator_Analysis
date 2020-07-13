@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import math as m
-import png_to_gif
+import plots.png_to_gif as png_to_gif
 import datetime as dt
 
 
@@ -19,7 +19,7 @@ class two_dof_robot_data_visualisation():
     def __init__(self, current_time):
         self.time = current_time
     
-    def generate_state_space_plot(self, admissible_region,  save=True, marker_size=1, filepath="admissible_plot"):
+    def generate_state_space_plot(self, admissible_region,  save=True, marker_size=1, filename="admissible_plot", filepath="admissible_region/"):
         """
         this function simply takes in a list of tuples and plots them
         Arguments:
@@ -43,7 +43,7 @@ class two_dof_robot_data_visualisation():
         plt.xlabel("s")
         plt.ylabel("$\dot{s}$")
         if save == True:
-            fig.savefig("plots/admissible_region/"+filepath + self.time)
+            fig.savefig("plots/" +filepath + filename + self.time)
             plt.close()
         else:
             plt.show()
@@ -559,3 +559,31 @@ class two_dof_robot_data_visualisation():
         else:
             plt.show()
         
+    def generate_collision_energy_angle_plot(self, angle_vs_energy,  save=True, marker_size=1, filepath="angle_vs_max_energy"):
+        """
+        this function simply takes in a list of tuples and plots them
+        Arguments:
+            admissable_region [(s1,sd1), (s2,sd2), ... ,(sn,sdn)]
+            
+        produces a plot of the s sdot region
+        """
+        angle = [m.degrees(x[0]) for x in angle_vs_energy]
+        max_energy = [x[1] for x in angle_vs_energy]
+        
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+            
+        ax1 = plt.subplot2grid((1,1),(0,0))
+        
+        ax1.plot(angle, max_energy,'or',ms=marker_size)
+        plt.grid(color='black', linestyle='-', linewidth=0.5)
+        plt.xlabel("angle / degrees")
+        plt.ylabel("$E_{kmax}$")
+        plt.xticks(np.arange(min(angle), max(angle)+60, 60))        
+        if save == True:
+            fig.savefig("plots/angle_vs_max_energy/"+filepath + self.time)
+            plt.close()
+        else:
+            plt.show()

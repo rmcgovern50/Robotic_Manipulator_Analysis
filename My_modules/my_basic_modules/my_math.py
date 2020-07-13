@@ -1,4 +1,4 @@
-from math import sin, cos, tan
+from math import sin, cos, tan, pi
 from sympy import simplify, symbols, Eq, Matrix
 import numpy as np
 
@@ -144,33 +144,38 @@ def intersection(p1, p2):
     return intersection
 
 
-
-
-        
-        
-        
-#enable to test anything
-#if __name__ == "__main__": 
+def rotate_xy(vector, angle):
+    """
+    function that takes in a 3D vector and rotates the x and y points by some
+    specified angle given in radians
     
+    Arguments:
+        vector - [x, y, z]
+        angle - angle in radians
+    
+    return:
+        rotated_vector - new_vector that is rotated as a list [x, y z]
     
     """
-    x, y, z = symbols('x, y z')
-    list_of_equations = [Eq(x + y, z),\
-                         Eq(x + y**2, z**2),\
-                         Eq(x, y + 2*z**2)]
+    a = angle
+    rotation_marix = np.array([[cos(a), -1*sin(a), 0], [sin(a), cos(a), 0], [0,0,1]])
     
-    constants_to_sub = [(z, 5), (x, 3)]
+    xyz_old = np.array([[vector[0]],[vector[1]],[vector[2]]])
+    xyz_new = rotation_marix.dot(xyz_old)
+    
+    rotated_vector = [xyz_new[0][0], xyz_new[1][0], xyz_new[2][0]]
+    
+    #print("New vector", xyz_new)
+    
+    return rotated_vector  
     
     
-    m = Matrix([[x+y,x+z],[y+x+2*z,x**2 + z**2 + x],[y-x+2*z,x + 2*z**2 + x] ])
-    new_m= sub_into_matrix(m, constants_to_sub)
-    print(new_m)
-    #print(sub_into_system_of_equs(list_of_equations, constants_to_sub))
-    """ 
-        
-        
-        
-        
+#enable to test anything
+if __name__ == "__main__": 
+    vector = [1,0,0]
+    angle = -pi/2
+    rotate_xy(vector, angle)
+
         
     
     

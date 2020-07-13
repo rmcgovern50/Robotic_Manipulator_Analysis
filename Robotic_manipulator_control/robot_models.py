@@ -31,7 +31,7 @@ class two_dof_planar_robot(pd):
     calculate admissable regions of the state space along a path
     """
     
-    def __init__(self, joint_mass, link_lengths, joint_limits, current_time):
+    def __init__(self, robot_parameters, current_time):
         """
         Initialise the robot with it's parameters
         Arguments: 
@@ -41,11 +41,16 @@ class two_dof_planar_robot(pd):
         the joint limits will always be a list of 2 tuples in this case
         """
         self.type = "revolute prismatic robot (polar robot)"
-        self.link_lengths = link_lengths
-        self.joint_masses = joint_mass
+        self.link_lengths = robot_parameters['link_lengths']
+        self.joint_masses = robot_parameters['joint_masses']
+        self.joint_limits = robot_parameters['actuator_limits']
         
+        joint_mass = self.joint_masses
+        link_lengths = self.link_lengths
+        joint_limits = self.joint_limits
+
+
         self.s, self.sd, self.sdd = symbols('s sd sdd')
-        self.joint_limits = joint_limits
 
         self.m1, self.m2, self.l1, self.l2, self.u1min, self.u1max, self.u2min, self.u2max,\
         = symbols('m1, m2 L1 L2 u1min u1max, u2min u2max')#make symbols for all the varables for symbolic calculations
