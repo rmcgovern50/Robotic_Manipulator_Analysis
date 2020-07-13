@@ -83,11 +83,12 @@ if __name__ == "__main__":
      
     simulation_parameters = { 's_lim':[0, 1, 0.01],\
                               'sd_lim':  [0,20, 0.1],\
-                              'line_definition': [(0.25, 0.15), (0.25,-0.15)],\
+                              'line_definition': [(0.25, 0.15), (-0.25,0.1)],\
                               'initial_ssd_coordinate': (0,0),\
                               'final_ssd_coordinate': (1,0)\
                               }    
     
-    #straight_line_test(robot, simulation_parameters, True)
-    rotating_impact_direction_test(robot, simulation_parameters,True)
-    #produce_admissible_region_energy_projection_test(True)
+    straight_line_test(robot, simulation_parameters, True)
+    #rotating_impact_direction_test(robot, simulation_parameters,True)
+    produce_admissible_region_energy_projection_test(False)
+    

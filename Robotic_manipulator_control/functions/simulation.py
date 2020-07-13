@@ -118,10 +118,10 @@ def run_direction_varying_experiment(robot_parameters, simulation_parameters, da
         temp_energy_list = [x[2] for x in energy_list]
         temp_energy_list_array = np.array(temp_energy_list)
         
+        #print(temp_energy_list)
         index = np.argmax(temp_energy_list)
         max_energy = max(temp_energy_list)
-        
-        print(max_energy, temp_energy_list[index])
+                
         if rotation_angle == 0:
             max_energies = [(rotation_angle , max_energy)]
         else:

@@ -52,7 +52,7 @@ def produce_bounded_Ek_projection_on_s_sdot_plane(energy_list, Ek_bound, current
         
         #loop through the list and save all values needed for plot
         for el in energy_list:
-            print(el[2])
+            #print(el[2])
             if el[2] < Ek_bound:
                 if i == 0:
                     new_energy_list =  [el]
@@ -60,7 +60,7 @@ def produce_bounded_Ek_projection_on_s_sdot_plane(energy_list, Ek_bound, current
                 else:
                     new_energy_list.append(el)
                     
-        print(new_energy_list)
+        #print(new_energy_list)
         
         plotter.generate_state_space_plot(new_energy_list, True, 1, "admissible_Energy_bound_projection_plot", "admissible_Energy_bound_projection_plot/")
         
