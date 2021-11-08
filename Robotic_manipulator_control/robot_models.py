@@ -10,11 +10,12 @@ from sympy import symbols, Matrix, sin, cos, acos, asin, atan2, sqrt, pprint, di
 
 from path_dynamics_analysis import path_dynamics as pd
 #from path_dynamics_control import path_dynamics_controller as pdc
-#from robot_data_visualisation import two_dof_robot_data_visualisation as rdv
+from robot_data_visualisation import two_dof_robot_data_visualisation as rdv
 
 import math as m
 import my_math as mm
 import numpy as np
+import datetime as dt
 
 #from my_visualising import simple_plot
 import my_visualising as mv
@@ -62,12 +63,12 @@ class two_dof_planar_robot(pd):
         symbols_to_sub = [self.m1, self.m2, self.l1, self.l2, self.u1min, self.u1max, self.u2min, self.u2max]
         values_to_sub = [joint_mass[0], joint_mass[1], link_lengths[0], link_lengths[1], joint_limits[0][0], joint_limits[0][1], joint_limits[1][0], joint_limits[1][1]]
         
-        constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
+        self.constants_to_sub = ms.combine_to_tuples(symbols_to_sub, values_to_sub)
         self.dynamics()
         
         #super(two_dof_planar_robot, self).__init__(constants_to_sub, self.s, self.sd, self.sdd, self.qd)
         pd. __init__(pd, self.M, self.C, self.g, self.q1, self.q2, \
-                     self.q1d, self.q2d, self.q1dd, self.q2dd,constants_to_sub,\
+                     self.q1d, self.q2d, self.q1dd, self.q2dd,self.constants_to_sub,\
                      self.s, self.sd, self.sdd, self.qd,)
         
     def dynamics(self):
@@ -254,12 +255,9 @@ class two_dof_planar_robot(pd):
         Xs = [xs, ys]
         qs = self.symbolic_inverse_kinematics(Xs)
         
-
         return qs
         
-    
-        
-    def joint_space_straight_line(self, start, end):
+    def joint_space_straight_line_parameterisation(self, start, end):
         """
         Arguments:
             start = (q1start, q2start)
@@ -274,17 +272,38 @@ class two_dof_planar_robot(pd):
         q2s = start[1] - self.s*(start[1] - end[1])   
         
         qs = [q1s, q2s]
-
+        
+        return qs
+        
+    def circular_arc_parameterisation(self, centre = (0,0.3), R=0.1):
+        """
+        Parameters
+        ----------
+        centre : centre point of the circle
+            [xc, yc]
+        Returns
+        -------
+        qs : symbolic representation of the parameterisation
+            [q1(s), q2(s)]
+        """
+        
+        xc = centre[0]
+        yc = centre[1]
+        print(xc, R )
+        xs = xc + R*cos(self.s*m.pi)
+        ys = yc - R*sin(self.s*m.pi)        
+        
+        Xs = [xs, ys]
+        qs = self.symbolic_inverse_kinematics(Xs)
+        
         return qs
         
     def simulate_trajectory(self, qs, increment=0.1):
         """
         Arguments:
             qs - list of parameterised trajectories
-            increment - set increment size
-            
+            increment - set increment size 
         return:
-
         """
         s = 0
         coordinates = []
@@ -324,7 +343,6 @@ class two_dof_planar_robot(pd):
         -------
         [xdir, ydir, zdir]
         unit vector pointing from start to end
-
         """
         
         x1= line_definition[0][0]
@@ -339,9 +357,7 @@ class two_dof_planar_robot(pd):
         
         return direction
         
-        
-         
-    def run_full_path_dynamics_analysis(self, path_straight_line, s_lims, sd_lims):
+    def run_full_path_dynamics_analysis(self, path_def, s_lims, sd_lims):
         """
         Description-
             This is a method that uses many of the existing methods in this class
@@ -349,7 +365,7 @@ class two_dof_planar_robot(pd):
             that can then be used to design controllers in this space
         
         Arguments:
-            path_straight_line - [(xstart, ystart), (xend, yend)] - point to point movement coordinates
+            path_def - ["path type", parameters] - point to point movement coordinates
             s_lims - [start s, end s, s increment] - sampling rate for admissable region
             sd_lims - [start sd, end sd, sd increment] - sampling rate for admissable region
         
@@ -361,30 +377,87 @@ class two_dof_planar_robot(pd):
         """
         
         #convert q to q(s)
-        self.qs = self.straight_line_parameterisation(path_straight_line[0], path_straight_line[1])
- 
+        path_type = path_def[0]
+        path_parameters = path_def[1]
+        #print(path_type, path_parameters)
+        if path_type == "circular arc":
+            centre = path_parameters[0]
+            radius = path_parameters[1]
+            self.qs = self.circular_arc_parameterisation(centre, radius)
+        elif path_type == "straight line":
+            self.qs = self.straight_line_parameterisation(path_parameters[0], path_parameters[1])
+        elif path_type == "joint space line":
+            self.qs = self.joint_space_straight_line_parameterisation(path_parameters[0], path_parameters[1])
+        else:
+            print("error no qs defined")
+            
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
-        
-        #calculate the derivatives
-        _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
-        pd.pass_qs_qds_qdds(pd, self.qs, self.qds, self.qdds)
-        
-        #get all the necessary matrices in terms of the parameterised matrices
-        self.Mqs, self.Cqs, self.gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
-        #print(Mqs, Cqs, gqs)
-        
-        #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
-        Ms, Cs, gs = pd.calc_s_matrices(self, self.Mqs, self.Cqs, self.gqs, dqds, d2qds2)
-        #print(Ms, Cs, gs)
-        
-        #calculate bounds based on the path dynamics
-        self.bounds = pd.calc_bounds(self, Ms, Cs, gs)
+        try:
+            #calculate the derivatives
+            _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
+            pd.pass_qs_qds_qdds(pd, self.qs, self.qds, self.qdds)
+            
+            #get all the necessary matrices in terms of the parameterised matrices
+            self.Mqs, self.Cqs, self.gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
+            #print(Mqs, Cqs, gqs)
+            
+            #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
+            self.Ms, self.Cs, self.gs = pd.calc_s_matrices(self, self.Mqs, self.Cqs, self.gqs, dqds, d2qds2)
+            #print(Ms, Cs, gs)
+            
+            #calculate bounds based on the path dynamics
+            self.bounds = pd.calc_bounds(self, self.Ms, self.Cs, self.gs)
+            #print(self.bounds)
+    
+            self.admissible_region, self.boundary_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
+    
+            self.s_lims = s_lims
+            self.sd_lims = sd_lims
+        except:
+            print("could not run simulation")
+        #self.set_simulation_data()
 
+    def evaluate_joint_torques(self, inputs, states):
 
-        self.admissible_region, self.boundary_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
+        Ms = self.Ms
+        Cs = self.Cs
+        gs = self.gs
+        s = self.s
+        sd = self.sd
+        sdd = self.sdd
         
-        self.s_lims = s_lims
-        self.sd_lims = sd_lims
+        
+        #print(sympy.shape(Ms))
+        tau = Ms*sdd + Cs*sd*sd + gs
+        print("shape is: ", tau.shape, tau)
+        
+        tau_1 = tau.row(0)
+        tau_2 = tau.row(1)
+        
+        torque_vector = []
+        
+        for state, u in zip(states, inputs):
+            x1 = state[0]
+            x2 = state[1]
+
+            tau_1_val = tau_1.subs([(s, x1), (sd, x2), (sdd, u)])
+            tau_2_val = tau_2.subs([(s, x1), (sd, x2), (sdd, u)])
+            print(tau_1_val[0], tau_2_val[0])
+            
+            if len(torque_vector) == 0:
+                torque_vector = [(tau_1_val[0], tau_2_val[0])]
+                tau_1_val_with_state = [(tau_1_val[0], state)]
+                tau_2_val_with_state = [(tau_2_val[0], state)]
+                torque_vector_with_state = [(tau_1_val[0], tau_2_val[0], state)]
+            else:
+                torque_vector.append((tau_1_val[0], tau_2_val[0]))
+                tau_1_val_with_state.append((tau_1_val[0], state))
+                tau_2_val_with_state.append((tau_2_val[0], state))
+                torque_vector_with_state.append((tau_1_val[0], tau_2_val[0], state))
+        #print("torques are", tau)
+                
+                
+        return torque_vector, tau_1_val_with_state, tau_2_val_with_state, torque_vector_with_state
 
     def get_potential_collision_energy(self, J, M, direction, s_sd):
         """
@@ -395,11 +468,9 @@ class two_dof_planar_robot(pd):
                 direction - []driection between robot velocity and object
                 s_sd - list of points the robot passes through 
                         [(s1, sd1), ..., (sn, sdn)]
-                
             return:
                 energies list with corresponding s and sd point attacted
-                [(s1, sd1, e1), ..., (sn, sdn, en)]
-                
+                [(s1, sd1, e1), ..., (sn, sdn, en)]                
         """
 
         n = Matrix(direction)
@@ -413,13 +484,13 @@ class two_dof_planar_robot(pd):
     def set_admissible_region_collision_energies(self, energy_list):
         self.admissible_region_collision_energies = energy_list
 
-
-    def set_simulation_data(self, control_trajectory, switching_points):
+    def set_simulation_data(self):
         """
         Method to save all the robot data in a dictionary so give a standard format that can be populated 
         by the saved data rather than rerunning the simulation each time
         
-
+        DISCONTINUED METHOD
+        
         Returns
         -------
         data : Dictionary
@@ -428,17 +499,62 @@ class two_dof_planar_robot(pd):
         
         data = {'admissible_region' : self.admissible_region,\
                 'admissible_region_grid': [self.s_lims, self.sd_lims],\
+                'boundary points': self.boundary_points,\
                 'admissible_region_collision': self.admissible_region_collision_energies,\
                 'q1_vs_s': self.s_axisq1,\
                 'q2_vs_s': self.s_axisq2,\
                 'q1_vs_q2': self.coordinates_q1_q2,\
                 'xy_coordinates': self.x_y_coordinates,\
                 'potential_collision_energy' :  self.energy_list,\
-                'control_trajectory': control_trajectory,\
-                'switching_points' : switching_points,\
                 'link_lengths' : self.link_lengths,\
                 'joint_masses' : self.joint_masses,\
-                'actuator_limits' : self.joint_limits\
+                'actuator_limits' : self.joint_limits,\
+                'actuator_bounds' : self.bounds\
                 }
+        self.sim_data = data
 
         return data
+        
+    def check_if_model_lipschitz(self):
+        
+        pd.lipschitz_test_admissible_region(self)
+        
+    def plot_workspace_movement(self, save=False, plot_start_end_points=True):
+        
+        try:
+            current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots     
+            plotter = rdv(current_time)
+            plotter.plot_robot_motion_x_y(self.link_lengths, \
+                                      self.x_y_coordinates, \
+                                      self.s_axisq1, \
+                                      start_end_only=plot_start_end_points,\
+                                      save=save)
+        except:
+            print("That didn't work, was the simulation run???")
+                
+    def plot_admissible_region(self):
+        try:
+            current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots     
+            plotter = rdv(current_time)
+            plotter.generate_state_space_plot(self.admissible_region,save=False)
+        except:
+            print("That didn't work, was the simulation run???")
+        
+    def plot_joint_space(self, ms=1,save_file=False):
+
+        try:
+            current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots     
+            plotter = rdv(current_time)
+            plotter.plot_q1_against_q2(self.coordinates_q1_q2, save=save_file,\
+                               marker_size=ms,\
+                               file_name="q2 vs q2",\
+                               filepath="paper_plots/")
+        except:
+            print("that not working")
+            
+            
+            
+            
+            
+            
+            

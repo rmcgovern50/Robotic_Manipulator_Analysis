@@ -5,8 +5,8 @@ This is a class that will allow path dynamics to be analysed
 
 import my_math as mm# import sub_into_matrix
 import matplotlib.pyplot as plt
-from sympy import Matrix, diff, Transpose, pprint
-
+from sympy import Matrix, diff, Transpose, pprint, latex
+import numpy as np
 
 
 class path_dynamics():
@@ -14,7 +14,7 @@ class path_dynamics():
         This class will perform the calculations for analysing the admissible 
         region of the robotic manipulators generally
     """
-    
+
     
     def __init__(self, M, C, g, q1, q2, q1d, q2d, q1dd, q2dd, constants_to_sub, s, sd, sdd, qd):
         """
@@ -104,7 +104,7 @@ class path_dynamics():
                 d2q_ds2.append(diff(dq_ds[i], self.s))
             i = i + 1
 
-        dqds = Matrix(dq_ds)   
+        dqds = Matrix(dq_ds)
         d2qds2 = Matrix(d2q_ds2)
 
         qds = Matrix(dq_ds)*self.sd
@@ -149,7 +149,6 @@ class path_dynamics():
         
         JntLims = self.joint_limits
         
-        
         i = 0
         bounds = []
         
@@ -157,7 +156,6 @@ class path_dynamics():
         #note the upper and lower are undecided and depend on the evaluation
         #of the third value in the tuple
         for joint in JntLims:
-            
             #store the variables in an easier form for calculation
             subtract_part = list(-1*Cs.row(i)*(self.sd)**2 - gs.row(i))[0]
             divide_part = list(Ms.row(i))[0]
@@ -198,21 +196,25 @@ class path_dynamics():
         
         s = slims[0]
         sincrement = slims[2]
-        sd = slims[0]
+        sd = sdlims[0]
         sdincrement = sdlims[2]
-         
+        
+        #save these variables for other methods
+        self.slims = slims
+        self.sdlims = sdlims
+        
         ad_region = []
         non_ad_region = [] 
         
         boundry_points = []
         
         #move across in the s direction
-        while(s <= slims[1]):
+        while(s <= slims[1] + sincrement):
             #move up in the s dot dirction
-            while(sd <= sdlims[1]):
+            while(sd <= sdlims[1] + sdincrement):
                 #check if a point is admissable
                 admissable = self.check_if_addmissable(bounds, s, sd)
-                
+                #print(s)
                 #store the point in a list of admissable or inadmissable regions 
                 if admissable == True: 
                     if len(ad_region) == 0:
@@ -252,7 +254,7 @@ class path_dynamics():
         else:
             raise Exception("invert parameter must equal 0 or 1")
             
-        
+        self.boundary = boundry_points
         return region, boundry_points 
 
 
@@ -273,9 +275,8 @@ class path_dynamics():
         If the max lower > min upper bound the function returns true, else it 
         returns false
         """
-
         
-        L, U = self.calc_upper_lower_bound_values((s_val,sd_val))
+        L, U = self.calc_upper_lower_bound_equations((s_val,sd_val),return_value=True)
         
         if L > U:
             return False
@@ -290,40 +291,44 @@ class path_dynamics():
         Arguments:
             point = (s, sd)
         """
+        print("obsolete function please use calc_upper_lower_bound_equations()")
         L = point[0]
         U = point[1]
         bounds = self.bounds
         i = 0
 
-        
+        #print(L, U)
         for bound in bounds:
-            
+            #print(point)
             lim_direction_decider = bound[2].subs([(self.s, point[0]), (self.sd, point[1])])
             sub_list = [(self.s, point[0]), (self.sd, point[1])]
             
             #put the bounds the right way round
-            
-            if lim_direction_decider > 0:
-                L_to_check =  bound[0].subs(sub_list)
-                U_to_check = bound[1].subs(sub_list)
+            try:
                 
-            elif lim_direction_decider < 0:
-                L_to_check =  bound[1].subs(sub_list)
-                U_to_check = bound[0].subs(sub_list)
-                
-            else:
-                raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
-            
-            if i == 0:
-                L = L_to_check
-                U = U_to_check
-            else:
-                if L_to_check > L:
+                if lim_direction_decider > 0:
+                    L_to_check =  bound[0].subs(sub_list)
+                    U_to_check = bound[1].subs(sub_list)
+                    
+                elif lim_direction_decider < 0:
+                    L_to_check =  bound[1].subs(sub_list)
+                    U_to_check = bound[0].subs(sub_list)
+                    
+                else:
+                    raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
+                    
+                if i == 0:
                     L = L_to_check
-                if U_to_check < U:
                     U = U_to_check
+                else:
+                    if L_to_check > L:
+                        L = L_to_check
+                    if U_to_check < U:
+                        U = U_to_check
+            except:
+                print("weird direction decider = ", lim_direction_decider)
+                pass
             i = i + 1
-            
             
         return L, U
 
@@ -380,7 +385,7 @@ class path_dynamics():
         
         
         Jqs = self.calc_qs_Jacobian(J,  self.qs, self.qds, self.qdds)
-        
+
         Jqsn = n.T*Jqs
         
         #calculate 
@@ -405,5 +410,641 @@ class path_dynamics():
         if return_symbolic_equation == False:
             return deltaEk_list
         else:
-            return 
+            pass#functionality not added yet
         
+
+    def convert_admissible_region_boundry_to_polynomial(self, boundary_to_approximate, plot=False):
+        """
+        simple method to obtain a conservative polynomial
+
+        """
+                
+        x_val = [x[0] for x in boundary_to_approximate]
+        y_val = [x[1] for x in boundary_to_approximate]
+        
+        x=np.array(x_val)
+        y=np.array(y_val)
+        #z1 = np.polynomial.Polynomial.fit(x, y, 2)
+        
+        i = 3
+        fit_close_enough = False
+        desired_closeness = 0.05
+        while i < 1000 and fit_close_enough == False:
+            
+            z=np.polyfit(x,y, i) #x and y describe function to be approximated, the number is the order of polynomial
+            y_calc = np.polyval(z, x)
+            
+            y_calc=np.array(y_calc)
+            
+            difference = y - y_calc
+            #print(max(difference))
+            if max(difference) > desired_closeness: 
+                i = i + 1
+            else:
+                fit_close_enough = True
+                
+        print(i, fit_close_enough)
+        if plot ==True:
+            print(z)
+            #print(z1, z)
+            plt.plot(x, y_calc, color='g')
+            plt.plot(x, y, 'or', color='b', ms=1)
+    
+            plt.xlabel("s")
+            plt.ylabel("$\dot{s}$")
+            plt.ylim(ymin=0)
+            plt.show()
+        
+        return z, x
+    
+    def create_energy_limit_projection(self, actuator_constraint_boundary, energy_limit):
+        
+        new_admissable_boundary = []
+        i=0
+        #print(actuator_constraint_boundary)
+        #loop through the list and save all values needed for plot
+        for el in actuator_constraint_boundary:
+            #print(el[2])
+            if el[2] < energy_limit:
+                if i == 0:
+                    new_admissable_boundary =  [el[:2]]
+                    i=1
+                else:
+                    new_admissable_boundary.append(el[:2])
+                    
+        return new_admissable_boundary
+    
+    def create_boundary_description(self, region):
+        #function to move through and isolate the boundary of a given region (assuming the boundary is at the top)
+                        
+        s = [x[0] for x in region]
+        sd = [x[1] for x in region]
+        i=0
+        #print(region)
+        boundary_list = []
+        
+        #loop through and save the boundary elements
+        while i < len(region)-1:
+            s_current = s[i]
+            s_next = s[i + 1]
+            
+            if s_current != s_next:
+                if len(boundary_list) == 0:
+                    boundary_list = [(s[i], sd[i])]
+                else:
+                    boundary_list.append((s[i], sd[i]))
+            i = i + 1
+            
+        boundary_list.append((s[-1], sd[-1])) #save the final boundary point   
+        #print(boundary_list)
+        return boundary_list
+    
+    def get_region_acceleration_bound_equations(self):
+        B11= self.bounds[0][0]
+        B12 = self.bounds[0][1]
+        B1_direction_decider = self.bounds[0][2]
+        B21= self.bounds[1][0]
+        B22 = self.bounds[1][1]    
+        B2_direction_decider = self.bounds[1][2]        
+        print("Actuator 1, Bound 1 ", latex(B11))
+        print("============================")
+        print("Actuator 1, Bound 2 ", latex(B12))
+        print("============================")
+        print("Actuator 1, direction deciding equation ", latex(B1_direction_decider))                
+        print("============================")        
+        print("Actuator 2, Bound 1 ", latex(B21))
+        print("============================")        
+        print("Actuator 2, Bound 2 ", latex(B22))
+        print("============================")  
+        print("Actuator 2, direction deciding equation ", B2_direction_decider)         
+        print("============================")        
+
+    def get_admissible_region_sorted_by_acceleration_bounds(self):
+        """
+        method that takes the admissible region and splits it based on
+        the maximum acceleration and deceleration bounds at different
+        points
+
+        Returns
+        -------
+        new_region : list of lists of tuples
+            DESCRIPTION.
+            4 lists of tuples containing s sdot coordinates
+            list 1 is U1, L1 as bounds
+            list 2 is U1, L2 as bounds
+            list 3 is U2, L1 as bounds
+            list 4 is U2, L2 as bounds
+        """
+        new_region = [[()],[()],[()],[()]]
+        new_region_3D = [[()],[()],[()],[()]]
+        #limiting bounds on actuator 1
+        B11= self.bounds[0][0]
+        B12 = self.bounds[0][1]
+        
+        #limiting bounds on actuator 2
+        B21= self.bounds[1][0]
+        B22 = self.bounds[1][1]                
+        
+        admissible_region = self.admissible_region
+            
+        umin_index = 0 # index to mark the region label
+        lmax_index = 0 # index to mark the region label
+        
+        
+        
+        for point in admissible_region:
+            #print(point)
+            
+            variables_to_sub = [(self.s, point[0]), (self.sd, point[1])]
+            
+            #calculate actuator 1 limits
+            B11_val = B11.subs(variables_to_sub)
+            B12_val = B12.subs(variables_to_sub)
+            
+            #define the upper and lower bounds
+            if B11_val > B12_val:
+                U1 = B11_val
+                L1 = B12_val
+            else:
+                U1 = B12_val
+                L1 = B11_val                
+            
+            #calculate actuator 2 limits
+            B21_val = B21.subs(variables_to_sub)
+            B22_val = B22.subs(variables_to_sub)
+            
+            #define the upper and lower bounds
+            if B11_val > B12_val:
+                U2 = B21_val
+                L2 = B22_val
+            else:
+                U2 = B22_val
+                L2 = B21_val  
+            
+            if U1 > U2:
+                Umin = U2
+                umin_index = 2
+            else:
+                Umin = U1
+                umin_index = 1                
+            
+            if L1 > L2:
+                Lmax = L1
+                lmax_index = 1
+            else:
+                Lmax = L2
+                lmax_index = 2
+
+            
+            if umin_index == 1 and lmax_index == 1:
+                #print("x1")
+                new_region[0].append(point)
+                new_region_3D[0].append((point[0],point[1], Lmax, Umin))
+            elif  umin_index == 1 and lmax_index == 2:
+                #print("x2")
+                new_region[1].append(point)
+                new_region_3D[1].append((point[0],point[1], Lmax, Umin))
+            elif  umin_index == 2 and lmax_index == 1:
+                #print("x3")
+                new_region[2].append(point)
+                new_region_3D[2].append((point[0],point[1], Lmax, Umin))
+            elif  umin_index == 2 and lmax_index == 2:
+                #print("x4")
+                new_region[3].append(point)
+                new_region_3D[3].append((point[0],point[1], Lmax, Umin))
+                    
+            umin_index = 0 # reset
+            lmax_index = 0 # reset         
+            
+        new_region[0].pop(0)
+        new_region[1].pop(0)
+        new_region[2].pop(0)
+        new_region[3].pop(0)
+
+        new_region_3D[0].pop(0)
+        new_region_3D[1].pop(0)
+        new_region_3D[2].pop(0)
+        new_region_3D[3].pop(0)
+
+        return new_region, new_region_3D
+    
+    
+    def check_if_list_is_made_of_multiple_sets(self, region_to_test, plot=True):
+        """
+        
+
+        Parameters
+        ----------
+        region_to_test : list of points 
+            DESCRIPTION. list of points making up some region
+        plot : bool, optional
+            DESCRIPTION. If true produce a plot
+
+        Returns
+        -------
+        boundary_points : list of points
+            DESCRIPTION. list  of points around the boundary of the input region
+
+        """
+        slims = self.slims
+        sdlims = self.sdlims
+        
+        s_min = slims[0]
+        s_increment = slims[2]
+        s_max = slims[1]
+        
+        sd_min = sdlims[0]
+        sd_increment = sdlims[2]        
+        sd_max = sdlims[1]
+        
+        i = 0
+        B = 0
+        #print(len(region_to_test))
+        boundary_points = [()]
+        for suspect_boundary_point in region_to_test:
+            
+            s = suspect_boundary_point[0]
+            sd = suspect_boundary_point[1]
+            
+            #define the points that exist in the non boundary point case
+            point_right  = (s + s_increment , sd)
+            point_left =   (s - s_increment , sd)
+            point_above  = (s               , sd + sd_increment)
+            point_below =  (s               , sd - sd_increment)            
+
+            sr = round(point_right[0], 4)
+            sdr = round(point_right[1], 4)
+
+            sl = round(point_left[0], 4)
+            sdl = round(point_left[1], 4)
+            
+            sa = round(point_above[0], 4)
+            sda = round(point_above[1], 4)
+
+            sb = round(point_below[0], 4)
+            sdb = round(point_below[1], 4)
+            
+            #set flags
+            l_found = False
+            r_found = False
+            a_found = False
+            b_found = False
+            
+            #loop through the region and attempt to find all 
+            #4 points
+            points_searched=0
+            for point in region_to_test:
+                sp = round(point[0], 4)
+                sdp = round(point[1], 4)
+                
+                if sp == sr and sdp == sdr:
+                    r_found = True
+                elif sp == sl and sdp == sdl:
+                    l_found = True
+                elif sp == sa and sdp == sda:
+                    a_found = True
+                elif sp == sb and sdp == sdb:
+                    b_found = True
+                #print("sides found",l_found, r_found , a_found, b_found )
+                points_searched = points_searched + 1 
+                if l_found and r_found and a_found and b_found:
+                    #print("boundary point is definitely not ", suspect_boundary_point)
+                    break
+                
+            if points_searched < len(region_to_test):
+                i = i + 1 #print("not a boundary point")
+            else:
+                boundary_points.append(suspect_boundary_point)
+                B = B + 1
+                #print("is a boundary point")
+        
+                
+        #print(i, B)
+        #print(boundary_points)
+        boundary_points.pop(0)
+        if plot:
+            x = [x[0] for x in boundary_points]
+            y = [x[1] for x in boundary_points]
+            
+            plt.plot(x, y, 'or', color='y', ms=1)
+            plt.xlabel("s")
+            plt.ylabel("$\dot{s}$")
+            plt.ylim(ymin=0)
+            plt.show()
+        return boundary_points
+
+    def sort_boundary(self, boundary_points, plot=False):
+        
+
+        slims = self.slims
+        sdlims = self.sdlims
+
+        #define grid increments
+        s_increment = slims[2]
+        sd_increment = sdlims[2]        
+        
+        #define grid ratio sd/s
+        ratio = (sd_increment/s_increment)
+
+        largest_gap_between_adjacent_points = np.sqrt(np.square(ratio*(s_increment)) + np.square(sd_increment))*1.1#add 10% incase rounding
+        #each point on the boundary will have two closest points
+        #choose a random point and find the closest point
+        #add the closest point to the list and remove it from the searchable list
+        sorted_list = [(boundary_points[0])]
+        boundary_points.pop(0)
+        
+        weird_points = [(0,0)]
+        i=0
+
+        while len(boundary_points) > 0:
+            
+            #form lists of the s and sd coordinates for the remaining boundary    
+            s = [x[0] for x in boundary_points]
+            sd = [x[1] for x in boundary_points]
+            
+            #convert to np arrays for speed
+            s_boundary = np.array(s)
+            sd_boundary = np.array(sd)
+           
+            #take the latest element from the sorted list and form a vector to
+            #do vector compuations with all other points on the boundary
+            s_current = sorted_list[i][0]
+            sd_current = sorted_list[i][1]
+            
+            s_current_vec = s_current*np.ones(len(boundary_points))
+            sd_current_vec = sd_current*np.ones(len(boundary_points))
+            
+            #calculate the distance between the latest sorted element and all other points
+            #record the min distance and the index of the value
+
+            distances = np.sqrt(np.square(ratio*(s_current_vec - s_boundary)) + np.square(sd_current_vec - sd_boundary))
+            min_distance = np.min(distances)
+            min_distance_index = np.argmin(distances)
+            #print(min_distance)
+            #add the closest point to the sorted list and remove the point from the boundary list or future searches
+
+            
+            if min_distance > largest_gap_between_adjacent_points:
+                #need to better isolate how to deal with these situations
+                #these points are often generated due to the presence of multiple regions
+                #or there being a thin part of one region leading to multiple choices
+                #print("large minimum distance", min_distance)
+                weird_points.append(boundary_points[min_distance_index])
+                i = i - 1
+                #print()
+            else:
+                sorted_list.append(boundary_points[min_distance_index])
+                
+            #remove the nearest point to the current one as it is now in the sorted list and shouldnt be found again
+            boundary_points.pop(min_distance_index)       
+            
+            #increment the loop counter
+            i = i + 1 #move onto the next point in the sorted list
+
+
+        weird_points.pop(0)
+
+        
+        print(len(weird_points))
+
+        if plot:
+            
+            try:
+                x = [x[0] for x in sorted_list]
+                y = [x[1] for x in sorted_list]
+                plt.plot(x, y, 'or', color='r', ms=1)
+            except:
+                pass
+            
+            try:
+                x1 = [x[0] for x in weird_points]
+                y1 = [x[1] for x in weird_points]
+                #plt.plot(x1, y1, color='y', ms=1)   
+            except:
+                pass
+            
+            try:
+                xs = x[125:175]
+                ys = y[125:175]
+                #plt.plot(xs, ys, 'or', color='g', ms=1)
+            except:
+                pass
+            
+            plt.xlabel("s")
+            plt.ylabel("$\dot{s}$")
+            plt.ylim(ymin=0)
+            plt.show()
+
+        return sorted_list, weird_points
+    
+    
+    def generate_test_admissible_region(self):
+        """
+            return: -
+                [(s2, s1dot), ..., (sn, sndot)]
+        """
+        s = 0
+        sdot = 0
+        s_incr = 0.1
+        sd_incr =  1
+        """
+            s_dot_max = (sdot - 0.5)**2 + 5 from s = 0 -> 1
+        """
+        quardratic =  mm.quardratic([0,1], [0,10], 0.5, 5, 0.1)
+        #s_dot_max = [5.25, ]
+        """
+        while s < 1:
+            while sdot < :
+            s = s + s_incr 
+        """
+        return test_region
+    
+
+    def lipschitz_test_admissible_region(self):
+        """
+        -work out the relevant equation for the given point
+        
+        -find du/dx1, find du/dx2, raw_derivatives
+        
+        -store the absolute value of each abs_derivatives = [state, abs( dudx1), abs(dudx2)]
+        
+        -choose new point and loop :)        
+        """
+
+        print("inside")#, self.admissible_region)
+        
+        i = 0
+        for state in  self.admissible_region:
+            
+            x1 = state[0]
+            x2 = state[1]
+            
+            #obtain the relevant equations
+            L_eq, U_eq  = self.calc_upper_lower_bound_equations((x1, x2))
+            #evaluate the derivatives
+            partial_dL_dx1_evaluated, partial_dL_dx2_evaluated \
+            , partial_dU_dx1_evaluated, partial_dU_dx2_evaluated \
+            = self.get_partial_derivatives(L_eq, U_eq, (x1,x2))
+
+            #print("L derivatives: ", partial_dL_dx1_evaluated, partial_dL_dx2_evaluated)
+            #print("U derivatives: ", partial_dU_dx1_evaluated, partial_dU_dx2_evaluated)
+            #print("=======")
+            
+            if i == 0:
+                partial_L = [(partial_dL_dx1_evaluated, partial_dL_dx2_evaluated, state)]
+                partial_U = [(partial_dU_dx1_evaluated, partial_dU_dx2_evaluated, state)]   
+                
+            else:
+                partial_L.append((partial_dL_dx1_evaluated, partial_dL_dx2_evaluated, state))
+                partial_U.append((partial_dU_dx1_evaluated, partial_dU_dx2_evaluated, state))                
+            i = i + 1
+            
+            
+        print("derivatives calculated")
+        #get a list of each
+        partial_L_dx1 = [x[0] for x in partial_L]
+        partial_L_dx2 = [x[1] for x in partial_L]
+        partial_L = partial_L_dx1 + partial_L_dx2
+        
+        print(len(partial_L))
+        
+        partial_U_dx1 = [x[0] for x in partial_U]
+        partial_U_dx2 = [x[1] for x in partial_U]
+        partial_U = partial_U_dx1 + partial_U_dx2
+        
+        print(len(partial_U))
+        
+        max_gradient_L = np.amax(np.absolute(partial_L))
+        max_gradient_U = np.amax(np.absolute(partial_U))
+
+        print("L max gradient: -> ", max_gradient_L)
+        print("U max gradient: -> ", max_gradient_U)
+
+
+    def calc_upper_lower_bound_equations(self, point, return_value=False):
+        """
+        Method to take in a point and evaluate the upper and lower bounds at that point
+        Arguments:
+            point = (s, sd)
+            
+        bounds is a list of bounds on each joint [(bound 1, bound 2, directions decider)1,
+                                                  (bound 1, bound 2, directions decider)2,
+                                                  (bound 1, bound 2, directions decider)3,
+                                                  (...)
+                                                  (bound 1, bound 2, directions decider)N,]
+        """
+
+        
+        bounds = self.bounds
+        i = 0
+
+        #print(L, U)
+        for bound in bounds:
+            #print(point)
+            lim_direction_decider = bound[2].subs([(self.s, point[0]), (self.sd, point[1])])
+            sub_list = [(self.s, point[0]), (self.sd, point[1])]
+            
+
+            try:
+                #put the bounds the right way round
+                if lim_direction_decider > 0:
+                    L_to_check =  bound[0].subs(sub_list)
+                    U_to_check = bound[1].subs(sub_list)
+                    
+                elif lim_direction_decider < 0:
+                    L_to_check =  bound[1].subs(sub_list)
+                    U_to_check = bound[0].subs(sub_list)
+                    
+                else:
+                    raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
+                
+                #first loop set L as the first bounds
+                if i == 0:
+                    L = L_to_check
+                    U = U_to_check
+                    #store the corresponding equations in variables
+                    if lim_direction_decider > 0:
+                        L_eq =  bound[0]
+                        U_eq = bound[1]
+                        
+                    elif lim_direction_decider < 0:
+                        L_eq =  bound[1]
+                        U_eq = bound[0]                  
+
+                #other loops decide where we have found L or U
+                else:
+                    if L_to_check > L:
+                        L = L_to_check
+                        #save the corresponding equation
+                        if lim_direction_decider > 0:
+                            L_eq =  bound[0]
+                        elif lim_direction_decider < 0:
+                            L_eq =  bound[1]
+                    if U_to_check < U:
+                        U = U_to_check
+                        #save the corresponding equation
+                        if lim_direction_decider > 0:
+                            U_eq = bound[1]    
+                        elif lim_direction_decider < 0:
+                            U_eq = bound[0]   
+            except:
+                print("weird direction decider = ", lim_direction_decider)
+                pass
+            i = i + 1
+            #print(i)
+            
+        if return_value:  
+            return L, U
+        else:
+            return L_eq, U_eq
+        
+    def get_partial_derivatives(self, U_eq, L_eq, state):
+        """
+        function to get the partial derivatives of the input functions evaluated at the state
+        """
+
+        x1 = state[0]
+        x2 = state[1]
+        
+        #obtain the relevant equations
+        L_eq, U_eq  = self.calc_upper_lower_bound_equations((x1, x2))
+        
+        #get the derivatives for the L equations
+        #==============================================================
+        #sub in the x1 point and get the derivative wrt x2      
+        L_eq_x1_subed = L_eq.subs([(self.s, x1)])
+        partial_dL_dx2 = diff(L_eq_x1_subed, self.sd)
+        
+        #evalaute the derivative at the point of interest
+        partial_dL_dx2_evaluated = partial_dL_dx2.subs([(self.sd, x2)])
+        #===============================================================
+        #sub in the x2 point of the same state and get the derivative wrt x1
+        
+        L_eq_x2_subed = L_eq.subs([(self.sd, x2)])
+        partial_dL_dx1 = diff(L_eq_x2_subed, self.s)
+        #evalaute the derivative at the point of interest
+        partial_dL_dx1_evaluated = partial_dL_dx1.subs([(self.s, x1)])
+        #================================================================
+          
+        
+        #get the derivatives for the L equations
+        #==============================================================
+        #sub in the x1 point and get the derivative wrt x2      
+        U_eq_x1_subed = U_eq.subs([(self.s, x1)])
+        partial_dU_dx2 = diff(U_eq_x1_subed, self.sd)
+        
+        #evalaute the derivative at the point of interest
+        partial_dU_dx2_evaluated = partial_dU_dx2.subs([(self.sd, x2)])
+        #===============================================================
+        #sub in the x2 point of the same state and get the derivative wrt x1
+        
+        U_eq_x2_subed = U_eq.subs([(self.sd, x2)])
+        partial_dU_dx1 = diff(U_eq_x2_subed, self.s)
+        #evalaute the derivative at the point of interest
+        partial_dU_dx1_evaluated = partial_dU_dx1.subs([(self.s, x1)])
+        #================================================================           
+        
+        return partial_dL_dx1_evaluated, partial_dL_dx2_evaluated, partial_dU_dx1_evaluated, partial_dU_dx2_evaluated
+    
+    
+    
