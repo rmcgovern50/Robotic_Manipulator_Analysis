@@ -119,7 +119,6 @@ class path_dynamics():
         M sdd + C sd + g = t(s) form
         """
         
-        #print(values_to_sub)
         self.Ms = Mqs*dqds 
         Cs = Mqs*d2sds2 + (1/(self.sd))*Cqs*dqds
         gs = gqs
@@ -211,6 +210,7 @@ class path_dynamics():
         #move across in the s direction
         while(s <= slims[1] + sincrement):
             #move up in the s dot dirction
+            print("new s is -> ", s)
             while(sd <= sdlims[1] + sdincrement):
                 #check if a point is admissable
                 admissable = self.check_if_addmissable(bounds, s, sd)
@@ -416,7 +416,6 @@ class path_dynamics():
     def convert_admissible_region_boundry_to_polynomial(self, boundary_to_approximate, plot=False):
         """
         simple method to obtain a conservative polynomial
-
         """
                 
         x_val = [x[0] for x in boundary_to_approximate]

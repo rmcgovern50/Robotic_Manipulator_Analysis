@@ -46,6 +46,12 @@ class two_dof_planar_robot(pd):
         self.joint_masses = robot_parameters['joint_masses']
         self.joint_limits = robot_parameters['actuator_limits']
         
+        #just assume the x1_axis is a lower constraint
+        nat_lower_boundary_x1 = np.linspace(0,1,num=100)
+        nat_lower_boundary_x2 = np.linspace(0,0,num=100)
+        self.lower_boundary_points = ms.combine_to_tuples(nat_lower_boundary_x1, nat_lower_boundary_x2)
+        
+        
         joint_mass = self.joint_masses
         link_lengths = self.link_lengths
         joint_limits = self.joint_limits
@@ -122,6 +128,48 @@ class two_dof_planar_robot(pd):
         
         #pprint(self.C * self.qd)
         return self.M, self.C, self.g
+    
+    
+    
+    def calc_upper_lower_bound_values(self, point):
+        """
+        Method to take in a point and evaluate the upper and lower bounds at that point
+        Arguments:
+            point = (s, sd)
+        """
+        L = point[0]
+        U = point[1]
+        bounds = self.bounds
+        i = 0
+        
+        for bound in bounds:
+            
+            lim_direction_decider = bound[2].subs([(self.s, point[0]), (self.sd, point[1])])
+            sub_list = [(self.s, point[0]), (self.sd, point[1])]
+            
+            #put the bounds the right way round
+            if lim_direction_decider > 0:
+                L_to_check =  bound[0].subs(sub_list)
+                U_to_check = bound[1].subs(sub_list)
+              
+            elif lim_direction_decider < 0:
+                L_to_check =  bound[1].subs(sub_list)
+                U_to_check = bound[0].subs(sub_list)
+                
+            else:
+                raise Exception("M(s) cannot be equal to zero - error in calc_upper_lower_bound_values method")
+            
+            if i == 0:
+                L = L_to_check
+                U = U_to_check
+            else:
+                if L_to_check > L:
+                    L = L_to_check
+                if U_to_check < U:
+                    U = U_to_check
+            i = i + 1
+                       
+        return L, U
     
     
     def end_effector_Jacobian(self):
@@ -392,29 +440,29 @@ class two_dof_planar_robot(pd):
             print("error no qs defined")
             
         #self.plot_end_effector_trajectory(qs, 0.01, 1, 1, 1, 1)
-        try:
-            #calculate the derivatives
-            _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
-            pd.pass_qs_qds_qdds(pd, self.qs, self.qds, self.qdds)
-            
-            #get all the necessary matrices in terms of the parameterised matrices
-            self.Mqs, self.Cqs, self.gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
-            #print(Mqs, Cqs, gqs)
-            
-            #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
-            self.Ms, self.Cs, self.gs = pd.calc_s_matrices(self, self.Mqs, self.Cqs, self.gqs, dqds, d2qds2)
-            #print(Ms, Cs, gs)
-            
-            #calculate bounds based on the path dynamics
-            self.bounds = pd.calc_bounds(self, self.Ms, self.Cs, self.gs)
-            #print(self.bounds)
-    
-            self.admissible_region, self.boundary_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
-    
-            self.s_lims = s_lims
-            self.sd_lims = sd_lims
-        except:
-            print("could not run simulation")
+        #try:
+        #calculate the derivatives
+        _, self.qds, self.qdds, dqds, d2qds2  = pd.path_parameterisation(self, self.qs)
+        pd.pass_qs_qds_qdds(pd, self.qs, self.qds, self.qdds)
+        
+        #get all the necessary matrices in terms of the parameterised matrices
+        self.Mqs, self.Cqs, self.gqs = pd.calc_qs_matrices(self, self.qs, self.qds, self.qdds)
+        print("matrices got")
+        
+        #form M(s), C(s), and g(s) as M(s)*sdd + C(s)*sd**2 + g(s) = t(s)
+        self.Ms, self.Cs, self.gs = pd.calc_s_matrices(self, self.Mqs, self.Cqs, self.gqs, dqds, d2qds2)
+        print("vectors got")
+        
+        #calculate bounds based on the path dynamics
+        self.bounds = pd.calc_bounds(self, self.Ms, self.Cs, self.gs)
+        print("bounds got")
+
+        self.admissible_region, self.boundary_points = pd.calc_admissable(self ,self.bounds, s_lims, sd_lims)
+        print("region got")
+        self.s_lims = s_lims
+        self.sd_lims = sd_lims
+        #except:
+            #print("could not run simulation")
         #self.set_simulation_data()
 
     def evaluate_joint_torques(self, inputs, states):
@@ -530,7 +578,7 @@ class two_dof_planar_robot(pd):
                                       start_end_only=plot_start_end_points,\
                                       save=save)
         except:
-            print("That didn't work, was the simulation run???")
+            print("That didn't work, was the simulation run?")
                 
     def plot_admissible_region(self):
         try:
@@ -538,7 +586,7 @@ class two_dof_planar_robot(pd):
             plotter = rdv(current_time)
             plotter.generate_state_space_plot(self.admissible_region,save=False)
         except:
-            print("That didn't work, was the simulation run???")
+            print("That didn't work, was the simulation run?")
         
     def plot_joint_space(self, ms=1,save_file=False):
 
@@ -550,11 +598,16 @@ class two_dof_planar_robot(pd):
                                file_name="q2 vs q2",\
                                filepath="paper_plots/")
         except:
-            print("that not working")
-            
-            
-            
-            
-            
-            
-            
+            print("That didn't work, was the simulation run?")
+
+    def plot_velocity_limit_curve(self, save_file= False):
+        #try:
+        current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots     
+        plotter = rdv(current_time)
+
+        plotter.generate_velocity_limit_curve_plot(self.boundary_points, save=save_file,\
+                           marker_size=1,\
+                           file_name="Velocity limit curve",\
+                           filepath="paper_plots/")
+        #except:
+            #print("That didn't work, was the simulation run?")        

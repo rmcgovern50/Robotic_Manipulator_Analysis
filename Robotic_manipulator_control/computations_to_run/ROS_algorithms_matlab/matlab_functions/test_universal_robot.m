@@ -41,7 +41,7 @@ ddqdt2_evaluated = subs(ddqdt2, [x1, x2], [x1_val, x2_val])
 %Path dynamics parameters
 Ms = massMatrix(ur5, single(qx1_evaluated))*transpose(dqx1_evaluated);
 Cs = massMatrix(ur5, single(qx1_evaluated))*transpose(ddqx1_evaluated) + ...
-     transpose(velocityProduct(ur5, single(qx1_evaluated), single(dqdt_evaluated))* (1/x2_val)); 
+     transpose(velocityProduct(ur5, single(qx1_evaluated), single(dqdt_evaluated))* (1/x2_val)^2); 
 gs= transpose(gravityTorque(ur5,single(qx1_evaluated)));
 
 u_val = 0.0

@@ -35,8 +35,8 @@ class model():
         """
         Initialise the robot model for manipulation
         """        
-        result = eng.sum_parameters(1.0, 2.0)
-        print(current_time, result)
+        #result = eng.sum_parameters(1.0, 2.0)
+        #print(current_time, result)
         self.x1, self.x2, self.u = symbols('x1 x2 u')
         self.robot = simulation_parameters['robot']
         self.path_def = simulation_parameters['path_definition']
@@ -175,18 +175,19 @@ class model():
         x2_lims = self.x2_lims
         path_def = self.path_def
         path_type = path_def[0]        
-        try:
-            if path_type == "joint_space_straight_line":
-                
-                q_start = path_def[1]
-                q_end = path_def[2]
-                print(q_start, q_end)
-                self.joint_space_straight_line_parameterisation(q_start, q_end)
-                       
-                _, self.qds, self.qdds, self.dqds, self.d2qds2  =\
-                    self.path_parameterisation(self.qx1)
-                
-                self.admissible_region, self.boundary_points = self.calc_admissable(x1_lims, x2_lims)
+        #try:
+        if path_type == "joint_space_straight_line":
+            
+            q_start = path_def[1]
+            q_end = path_def[2]
+            print(q_start, q_end)
+            self.joint_space_straight_line_parameterisation(q_start, q_end)
+                   
+            _, self.qds, self.qdds, self.dqds, self.d2qds2  =\
+                self.path_parameterisation(self.qx1)
+            
+            self.admissible_region, self.boundary_points = self.calc_admissable(x1_lims, x2_lims)
+        """
             elif path_type == "circular_arc":
                 print("here")
                 P0 = (0.5, 0.5, 0.0)
@@ -199,7 +200,7 @@ class model():
                 self.evaluate_path_parameters_workspace_path(Px1, x1, x2)
         except:
             print("could not run simulation")
-            
+        """  
     def evaluate_path_parameters_workspace_path(self, Px1, x1, x2):
         """
         evaluate the parameters derivative parameters 
@@ -273,6 +274,7 @@ class model():
         casted_ddqx1_evaluated = eng.cell(casted_qx1_evaluated)
         
         return casted_qx1_evaluated, casted_dqx1_evaluated, casted_ddqx1_evaluated
+
 
     def calc_admissable(self, x1_lims, x2_lims,  invert=0):
         """

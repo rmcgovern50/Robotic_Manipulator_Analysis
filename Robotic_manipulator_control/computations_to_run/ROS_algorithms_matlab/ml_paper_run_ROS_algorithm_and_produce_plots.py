@@ -67,6 +67,20 @@ def find_ROS(situation, current_time):
         # 'path_definition': ["joint_space_straight_line", [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]], [[pi/2, pi/2, pi/3, 2*pi/3, -pi/2, -pi/3,]] ]
         print("ml example 3 parameters input")
 
+    elif situation == 2:
+        
+        folder_name = "paper_example_2/"
+        
+        "always go [upper lower]"
+        target_interval = [(0.9, 4.0), (0.9, 2.0)]
+        
+        simulation_parameters = { 'x1_lim':[0, 1, 0.01],\
+                                 'x2_lim':  [0,20, 0.05],\
+                                 'robot': "universalUR5",\
+                                 'path_definition': ["joint_space_straight_line", [[pi/2, pi/2, pi/3, 2*pi/3, -pi/2, -pi/3,]], [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]]
+                               }
+        # 'path_definition': ["joint_space_straight_line", [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]], [[pi/2, pi/2, pi/3, 2*pi/3, -pi/2, -pi/3,]] ]
+        print("ml example 3 parameters input")
 
 
     print("situation: ", situation)
@@ -74,7 +88,7 @@ def find_ROS(situation, current_time):
     manipulator = sim.Step_1(current_time,
                              simulation_parameters,\
                              eng,\
-                             run_full_simulation=False,\
+                             run_full_simulation=True,\
                              save_folder=folder_name)
     
     #manipulator.plot_admissible_region()
@@ -93,9 +107,9 @@ def find_ROS(situation, current_time):
     run_step_4 = sim.Step_2(manipulator, \
                             target_interval,\
                             situation, control,\
-                            run_curve_simulations=False, \
-                            work_out_steps_to_run=False, \
-                            run_constraint_simulations=False,\
+                            run_curve_simulations=True, \
+                            work_out_steps_to_run=True, \
+                            run_constraint_simulations=True,\
                             save_folder=folder_name)
     
     extreme_trajectories.append(constraint_curve)
@@ -119,7 +133,7 @@ def find_ROS(situation, current_time):
         lower_boundary_trajectories = sim.Step_3(manipulator,\
                                                  control,\
                                                  xa_intersect,\
-                                                 run_full_simulation=False,\
+                                                 run_full_simulation=True,\
                                                  save_folder=folder_name)
         
         print("Step 3 complete")
@@ -137,8 +151,8 @@ def find_ROS(situation, current_time):
                                               constraint_curve,\
                                               situation,\
                                               extreme_trajectories,\
-                                              run_boundary_sim_setup=False,\
-                                              run_boundary_sim=False,\
+                                              run_boundary_sim_setup=True,\
+                                              run_boundary_sim=True,\
                                               save_folder=folder_name)
             
         print("step 4 complete")
@@ -203,7 +217,7 @@ def find_ROS(situation, current_time):
 if __name__ == "__main__": 
 
     start_time =  dt.datetime.now()
-    situation = 1
+    situation = 2
     
     find_ROS(situation, start_time)
     

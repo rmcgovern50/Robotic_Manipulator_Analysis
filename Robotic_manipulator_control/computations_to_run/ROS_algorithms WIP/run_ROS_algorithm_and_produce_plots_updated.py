@@ -23,6 +23,18 @@ from functions.controller import path_dynamics_controller
 
 import save_data as save_data
    
+
+
+def save_data_to_csv(data):
+    import csv   
+    #data = [(1,2),(4,5),(7,8)]
+    item_length = len(data[0])
+    
+    with open('constraint_data_example.csv', 'w') as test_file:
+      file_writer = csv.writer(test_file)
+      for i in range(item_length):
+          file_writer.writerow([x[i] for x in data])
+
 def find_ROS(situation, start_time):
     """
     This function will systematically run all simulations required to find the
@@ -34,9 +46,7 @@ def find_ROS(situation, start_time):
     
     The objective will be to perform the steps and plot the result after each
     """
-    current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots
-    
-    
+    current_time =  dt.datetime.now().strftime('_%Y_%m_%d_%H_%M_%S') #used for naming plots  
 
     if situation==1:
         """
@@ -321,7 +331,7 @@ def find_ROS(situation, start_time):
                        situation_select=situation)
     
     print("Step 2 complete")
-    
+    save_data_to_csv(constraint_curve)
     step_2_run_time=  dt.datetime.now()             
     diff = step_2_run_time-step_1_run_time
     minutes = diff.seconds/60
@@ -368,7 +378,7 @@ def find_ROS(situation, start_time):
     
     ###=======plotting==========
     #plotting.plot_multiple_trajectories(trajectory_list, current_time,"paper_plots/", save=False)    
-    
+    plotting.plot_multiple_trajectories([constraint_curve], current_time,"paper_plots/", save=False)
     manipulator.plot_workspace_movement(save=False, plot_start_end_points=True)    
     
     #soft_constraint = sim.generate_arbitrary_constraint_set_data(situation)    
@@ -379,7 +389,7 @@ def find_ROS(situation, start_time):
         
     manipulator.plot_joint_space(ms=1, save_file=False)    
     
-    #sim.plot_constraints(manipulator.boundary_points,constraint_curve, situation)
+    sim.plot_constraints(manipulator.boundary_points,constraint_curve, situation)
 
     if situation==1:
         pass
@@ -678,7 +688,7 @@ if __name__ == "__main__":
         
     #if isinstance("1.3", float):
     #    print("it worked")
-    
+
     end_time =  dt.datetime.now()    
     diff = end_time-start_time
     minutes = diff.seconds/60

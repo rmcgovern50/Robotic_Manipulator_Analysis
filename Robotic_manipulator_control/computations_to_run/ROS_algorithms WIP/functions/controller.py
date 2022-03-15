@@ -9,7 +9,7 @@ This function will take a manipulator model and work out control actions
 from math import sqrt, exp
 import numpy as np
 import my_math as mm
-from shapely.geometry import Point, shape, Polygon, LineString
+#from shapely.geometry import Point, shape, Polygon, LineString
 import matplotlib.pyplot as plt
 from sympy import symbols
 from my_sorting import combine_to_tuples

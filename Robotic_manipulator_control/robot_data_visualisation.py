@@ -14,7 +14,7 @@ import math as m
 #import plots.png_to_gif as png_to_gif
 import datetime as dt
 
-from labellines import *
+#from labellines import *
 
 
 class two_dof_robot_data_visualisation():
@@ -50,6 +50,31 @@ class two_dof_robot_data_visualisation():
             plt.close()
         else:
             plt.show()
+        
+        
+    def generate_velocity_limit_curve_plot(self, velocity_limit_curve, title="velocity_limit_curve", marker_size=1, save=False, filepath="", file_name="VLC"):
+        """
+        The velocity limit curve plot
+        """
+        x1_val = [x[0] for x in velocity_limit_curve]
+        x2_val = [x[1] for x in velocity_limit_curve]
+        
+        print(velocity_limit_curve)
+        if save == True:
+            fig = plt.figure(dpi=600)
+        else:
+            fig = plt.figure()
+            
+        ax1 = plt.subplot2grid((1,1),(0,0))
+        ax1.plot(x1_val,x2_val,'or',ms=marker_size)
+        plt.title(title)
+        plt.xlabel("$X_1$")
+        plt.ylabel("$X_2$")
+        if save == True:
+            fig.savefig("plots/" +filepath + filename + self.time)
+            plt.close()
+        else:
+            plt.show()        
         
 
     def generate_control_algorithm_plot(self, admissable_region, \
@@ -395,7 +420,7 @@ class two_dof_robot_data_visualisation():
         plt.arrow(arrowPosx, arrowPosy, dx, dy, color= 'purple', width=0.003 )
                 
         plt.title(title)
-        plt.xlabel("x (metres)")
+        plt.xlabel("z (metres)")
         plt.ylabel("y (metres)")
         if save == True:
             fig.savefig("plots/"+filepath+file_name + self.time+".svg", format="svg")
@@ -1200,11 +1225,8 @@ class two_dof_robot_data_visualisation():
                  label="ACC",\
                  linestyle="dashed")                
 
-        try:
-            labelLines(plt.gca().get_lines(), align=False, fontsize=10)
-        except:
-            print("error putting labels on lines resorting to legend")
-            plt.legend( bbox_to_anchor=(1.01, 1), loc='upper left', fontsize='normal')
+
+        plt.legend( bbox_to_anchor=(1.01, 1), loc='upper left', fontsize='medium')
                         
         plt.xlabel("$x_1$")
         plt.ylabel("$x_2$")
