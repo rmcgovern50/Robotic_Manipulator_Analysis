@@ -22,6 +22,7 @@ import my_sorting as ms
 
 import matplotlib.pyplot as plt
 import matlab.engine
+import os
 
 
 class model():
@@ -31,18 +32,32 @@ class model():
     calculate admissable regions of the state space along a path
     """
     
-    def __init__(self, eng, simulation_parameters, current_time):
+    def __init__(self, eng, robot, simulation_parameters, current_time):
         """
         Initialise the robot model for manipulation
         """        
         #result = eng.sum_parameters(1.0, 2.0)
         #print(current_time, result)
         self.x1, self.x2, self.u = symbols('x1 x2 u')
-        self.robot = simulation_parameters['robot']
+        self.robot = robot
         self.path_def = simulation_parameters['path_definition']
         self.x1_lims = simulation_parameters['x1_lim']
         self.x2_lims = simulation_parameters['x2_lim']        
         self.eng = eng
+        
+        #just assume the x1_axis is a lower constraint should update this incase we get other cases
+        nat_lower_boundary_x1 = np.linspace(0,1,num=100)
+        nat_lower_boundary_x2 = np.linspace(0,0,num=100)
+        self.lower_boundary_points = ms.combine_to_tuples(nat_lower_boundary_x1, nat_lower_boundary_x2)
+        
+        #things that we should add in to match the other model object
+        self.bounds = "N/A"#defined within matlab should probably define this in robot json file though
+        self.joint_limits = "N/A"
+        self.s = self.x1
+        self.sd = self.x2
+        self.s_lims = self.x1_lims
+        self.sd_lims = self.x2_lims
+
 
     def joint_space_straight_line_parameterisation(self, q_start, q_end):
         """
@@ -177,9 +192,8 @@ class model():
         path_type = path_def[0]        
         #try:
         if path_type == "joint_space_straight_line":
-            
-            q_start = path_def[1]
-            q_end = path_def[2]
+            q_start = [path_def[1][0]]
+            q_end = [path_def[1][1]]
             print(q_start, q_end)
             self.joint_space_straight_line_parameterisation(q_start, q_end)
                    
@@ -187,6 +201,10 @@ class model():
                 self.path_parameterisation(self.qx1)
             
             self.admissible_region, self.boundary_points = self.calc_admissable(x1_lims, x2_lims)
+        
+
+
+        self.return_sim_results()
         """
             elif path_type == "circular_arc":
                 print("here")
@@ -339,7 +357,7 @@ class model():
                         non_ad_region = [(x1, x2)]
                     else:
                         non_ad_region.append((x1, x2))                    
-                
+                #print("checking (x1, x2) ->", (x1, x2))
                 x2 = x2 + x2_inc
 
             #==================can get rid of between equals=====================
@@ -379,7 +397,7 @@ class model():
         except:
             print("That didn't work, was the simulation run???")
     
-    def return_sim_reults(self):
+    def return_sim_results(self):
         """
         return data to be pickled as we cannot pickle the object with matlab engine
         """

@@ -17,7 +17,6 @@ import time
 
 from sympy.utilities.autowrap import ufuncify
 
-
 class path_dynamics_controller():
     """
     This class will contain the methods for designing a controller for moving
@@ -39,23 +38,14 @@ class path_dynamics_controller():
         
 
         self.constriant_violation_condition = {
-            "1":"x1<x1_lower_lim",
-            "2":"x1>x1_upper_lim" ,            
-            "3":"x2<x2_lower_lim",
-            "4":"L>U",
-            ">4":"additional constraint violated" 
+            "0":"x1<x1_lower_lim",
+            "1":"x1>x1_upper_lim" ,            
+            "2":"x2<x2_lower_lim",
+            "3":"L>U",
+            ">3":"additional constraint violated" 
         }
-        # if constraint == 1:
-        #     reason = "x1<x1_lower_lim"
-        # elif constraint == 2:
-        #     reason = "x1>x1_upper_lim"                
-        # elif constraint == 3:
-        #     reason = "x2<x2_lower_lim"                     
-        # elif constraint ==4:
-        #     reason = "L>U"
-        # elif constraint > 4:
-        #     reason = "additional constraint violated" 
 
+        print("Initialising fast evaluation funtions")
         self.build_lamdifyed_constraint_matrix_for_fast_evaluation()
         self.build_lamdifyed_upper_lower_bound_for_fast_evaluation()
 
@@ -158,8 +148,6 @@ class path_dynamics_controller():
         = symbols('s sd')
         #sympy_matrix = sympy.Matrix(self.bounds)
         numpy_bounds = np.array(self.bounds)
-        print(type(numpy_bounds))
-
         #very_fast_Ax_Dx_list = [ufuncify([x1, x2], el, backend='cython',flags = ['-D_USE_MATH_DEFINES']) for row in numpy_bounds for el in row]#unfuncity all elements in the list self.bounds
         very_fast_Ax_Dx_list = [ufuncify([x1, x2], el, backend='cython') for row in numpy_bounds for el in row]#unfuncity all elements in the list self.bounds
         #print("Done!")
@@ -218,171 +206,170 @@ class path_dynamics_controller():
 
         return L, U
 
+    # def integrate(self, pos, step_size, polynomial_coefficents, acceleration_choice, direction):
+    #     """
+    #     Arguments:
+    #         pos - (s, sd) tuple of numbers
+    #         step_size - float that decides how big each integration step should be.
+    #         acceleration_choice - this is a string "U" will give max possible acceleration
+    #                                                "L" will give min possible acceleration
+    #                               add functionality for other accelerations
+    #         direction - string giving the direction of the integration
+    #     return:
+    #         trajectory - [(s1,sd1), ... , (sn, sdn)]
+    #         violations-                 
+    #             if sd> np.polyval(polynomial_coefficents, s):
+    #                 violation = 0 #"Safety_Constraint_Volation"
+    #             elif s < 0:
+    #                 violation = 1 #"s<0"
+    #             elif s > 1:
+    #                 violation = 2 #"s>1"
+    #             elif sd < 0:
+    #                 violation = 3 #"sd<0"
+    #     """
 
-    def integrate(self, pos, step_size, polynomial_coefficents, acceleration_choice, direction):
-        """
-        Arguments:
-            pos - (s, sd) tuple of numbers
-            step_size - float that decides how big each integration step should be.
-            acceleration_choice - this is a string "U" will give max possible acceleration
-                                                   "L" will give min possible acceleration
-                                  add functionality for other accelerations
-            direction - string giving the direction of the integration
-        return:
-            trajectory - [(s1,sd1), ... , (sn, sdn)]
-            violations-                 
-                if sd> np.polyval(polynomial_coefficents, s):
-                    violation = 0 #"Safety_Constraint_Volation"
-                elif s < 0:
-                    violation = 1 #"s<0"
-                elif s > 1:
-                    violation = 2 #"s>1"
-                elif sd < 0:
-                    violation = 3 #"sd<0"
-        """
-
-        trajectory = [pos]
-        boundries = []
-        i = 0
+    #     trajectory = [pos]
+    #     boundries = []
+    #     i = 0
         
-        s = pos[0]
-        sd = pos[1]
+    #     s = pos[0]
+    #     sd = pos[1]
     
-        integration_complete = False
-        violation = "integration not completed yet"
+    #     integration_complete = False
+    #     violation = "integration not completed yet"
         
-        while(integration_complete == False and i<1000):
+    #     while(integration_complete == False and i<1000):
             
-            #calculate -L
-            #print(current_pos)
-            L, U = self.calc_upper_lower_bound_values(pos)
-            s = pos[0]
-            sd = pos[1]
+    #         #calculate -L
+    #         #print(current_pos)
+    #         L, U = self.calc_upper_lower_bound_values(pos)
+    #         s = pos[0]
+    #         sd = pos[1]
             
-            if i == 0:
-                boundries = [(L, U)]
-            else:
-                boundries.append((L, U))            
+    #         if i == 0:
+    #             boundries = [(L, U)]
+    #         else:
+    #             boundries.append((L, U))            
 
 
-            if acceleration_choice == "U":
-                up_down_acc = U
-            elif acceleration_choice == "L":
-                 up_down_acc = L 
+    #         if acceleration_choice == "U":
+    #             up_down_acc = U
+    #         elif acceleration_choice == "L":
+    #              up_down_acc = L 
             
-            #print(L, U)
-            if direction == "backwards":
-                delta_s, delta_sd = self.calc_change_s_sd(-sd, -up_down_acc, step_size)#integrate backwards
-            elif direction == "forwards":
-                delta_s, delta_sd = self.calc_change_s_sd(sd, up_down_acc, step_size)#integrate forwards
+    #         #print(L, U)
+    #         if direction == "backwards":
+    #             delta_s, delta_sd = self.calc_change_s_sd(-sd, -up_down_acc, step_size)#integrate backwards
+    #         elif direction == "forwards":
+    #             delta_s, delta_sd = self.calc_change_s_sd(sd, up_down_acc, step_size)#integrate forwards
 
-            s = s + delta_s
-            sd = sd + delta_sd
-            pos = (s, sd)
-            #print(pos)
-            #print(s, sd, np.polyval(polynomial_coefficents, s))
+    #         s = s + delta_s
+    #         sd = sd + delta_sd
+    #         pos = (s, sd)
+    #         #print(pos)
+    #         #print(s, sd, np.polyval(polynomial_coefficents, s))
             
-            if sd > np.polyval(polynomial_coefficents, s) or s < 0 or s > 1 or sd < 0:
-                integration_complete = True
-                if sd> np.polyval(polynomial_coefficents, s):
-                    violation = 0#"Safety_Constraint_Volation"
-                elif s < 0:
-                    violation = 1#"s<0"
-                elif s > 1:
-                    violation = 2#"s>1"
-                elif sd < 0:
-                    violation = 3#"sd<0"
+    #         if sd > np.polyval(polynomial_coefficents, s) or s < 0 or s > 1 or sd < 0:
+    #             integration_complete = True
+    #             if sd> np.polyval(polynomial_coefficents, s):
+    #                 violation = 0#"Safety_Constraint_Volation"
+    #             elif s < 0:
+    #                 violation = 1#"s<0"
+    #             elif s > 1:
+    #                 violation = 2#"s>1"
+    #             elif sd < 0:
+    #                 violation = 3#"sd<0"
    
-            else:
-                trajectory.append(pos)                
-            #print(trajectory)
-            i=i+1
+    #         else:
+    #             trajectory.append(pos)                
+    #         #print(trajectory)
+    #         i=i+1
             
-        if direction == "backwards":#reverse backwards trajectories
-             trajectory.reverse()
+    #     if direction == "backwards":#reverse backwards trajectories
+    #          trajectory.reverse()
             
-        return violation, trajectory
+    #     return violation, trajectory
 
-    def simulate_trajectory(self, X0, L, direction=1, T=0.01, x1_lim=1):
-        """
-        Parameters
-        ----------
-        X0 : (x_1, x_2)
-            beginning state
-        T : float
-            sample size for simulation steps
-        L : TYPE
-            L the npercentage of actuation between U and L, value 0 < L < 1
-        direction : +1 or -1, optional
-            DESCRIPTION. The default is 1 representing forward integration
+    # def simulate_trajectory(self, X0, L, direction=1, T=0.01, x1_lim=1):
+    #     """
+    #     Parameters
+    #     ----------
+    #     X0 : (x_1, x_2)
+    #         beginning state
+    #     T : float
+    #         sample size for simulation steps
+    #     L : TYPE
+    #         L the npercentage of actuation between U and L, value 0 < L < 1
+    #     direction : +1 or -1, optional
+    #         DESCRIPTION. The default is 1 representing forward integration
 
-        Returns
-        -------
-        trajectory
-        """
+    #     Returns
+    #     -------
+    #     trajectory
+    #     """
         
-        x2_max = self.x2_lims[1]
+    #     x2_max = self.x2_lims[1]
         
-        #print(X0)
-        #change default x1_lim if direction is reversed
-        if direction==-1 and x1_lim ==1:
-            x1_lim = 0
+    #     #print(X0)
+    #     #change default x1_lim if direction is reversed
+    #     if direction==-1 and x1_lim ==1:
+    #         x1_lim = 0
         
-        state = X0
-        i=0
-        trajectory = [state]
-        boundries = []
+    #     state = X0
+    #     i=0
+    #     trajectory = [state]
+    #     boundries = []
              
-        integration_complete = False
-        reason = "integration not completed yet"
+    #     integration_complete = False
+    #     reason = "integration not completed yet"
         
-        while(integration_complete == False and i<10000):
-            #print("i = ", i)
-            #determine the max and min range values for the input
-            D, A = self.calc_upper_lower_bound_values(state)
-            #print((i/5000)*100, " % complete", (A, D))
-            x1 = state[0]
-            x2 = state[1]
+    #     while(integration_complete == False and i<10000):
+    #         #print("i = ", i)
+    #         #determine the max and min range values for the input
+    #         D, A = self.calc_upper_lower_bound_values(state)
+    #         #print((i/5000)*100, " % complete", (A, D))
+    #         x1 = state[0]
+    #         x2 = state[1]
             
-            if i == 0:
-                boundries = [(D, A)]
-            else:
-                boundries.append((D, A))            
+    #         if i == 0:
+    #             boundries = [(D, A)]
+    #         else:
+    #             boundries.append((D, A))            
             
-            if D <= A:
-                #choose the input based on the actuation level L
-                u = D + L*(A-D)
-                try:
-                    delta_x1, delta_x2 = self.calc_change_s_sd(direction*x2, direction*u, T)
-                except: 
-                    print("I gotcha")
-                x1 = x1 + delta_x1
-                x2 = x2 + delta_x2
-                state = (x1, x2)
-                #print("state: ", state)
-                violated, constraint =\
-                    self.check_if_constraints_violated_analytically(state) 
+    #         if D <= A:
+    #             #choose the input based on the actuation level L
+    #             u = D + L*(A-D)
+    #             try:
+    #                 delta_x1, delta_x2 = self.calc_change_s_sd(direction*x2, direction*u, T)
+    #             except: 
+    #                 print("I gotcha")
+    #             x1 = x1 + delta_x1
+    #             x2 = x2 + delta_x2
+    #             state = (x1, x2)
+    #             #print("state: ", state)
+    #             violated, constraint =\
+    #                 self.check_if_constraints_violated_analytically(state) 
                 
-                if violated == True:
-                    integration_complete = True
-                    if constraint == 1:
-                        reason = "x1<x1_lower_lim"
-                    elif constraint == 2:
-                        reason = "x1>x1_upper_lim"                
-                    elif constraint == 3:
-                        reason = "x2<x2_lower_lim"                     
-                    elif constraint ==4:
-                        reason = "L>U"
-                    elif constraint > 4:
-                        reason = "additional constraint violated" 
-                else:
-                    trajectory.append(state)
-            else:
-                integration_complete = True
+    #             if violated == True:
+    #                 integration_complete = True
+    #                 if constraint == 1:
+    #                     reason = "x1<x1_lower_lim"
+    #                 elif constraint == 2:
+    #                     reason = "x1>x1_upper_lim"                
+    #                 elif constraint == 3:
+    #                     reason = "x2<x2_lower_lim"                     
+    #                 elif constraint ==4:
+    #                     reason = "L>U"
+    #                 elif constraint > 4:
+    #                     reason = "additional constraint violated" 
+    #             else:
+    #                 trajectory.append(state)
+    #         else:
+    #             integration_complete = True
                 
-            i=i+1
+    #         i=i+1
 
-        return trajectory, boundries, reason        
+    #     return trajectory, boundries, reason        
     
     def simulate_trajectory_with_control(self, X0, direction=1, T=0.01, data_log=False):
         """
@@ -510,7 +497,7 @@ class path_dynamics_controller():
                 if constraint < 4:
                     constraint_key = str(constraint)
                 else:
-                    constraint_key = ">4"
+                    constraint_key = ">3"
                 reason = self.constriant_violation_condition[constraint_key]
                 break
             else:
@@ -527,162 +514,162 @@ class path_dynamics_controller():
         self.integration_time = end_integration_time - start_integration_time
         return trajectory, u_list, L_list, A_list, D_list, A_list_with_state, D_list_with_state, u_list_with_state, L_list_with_state, reason        
     
-    def fast_simulate_trajectory_with_control(self, X0, direction=1, T=0.01, log_data=False):
-        """
-        Parameters
-        ----------
-        X0 : (x_1, x_2)
-            beginning state
-        T : float
-            sample size for simulation steps
-        self.Lambda_x : Function that sets actuation level
-            Lambda_x the percentage of actuation between U and L, value 0 < L < 1
-        direction : +1 or -1, optional
-            DESCRIPTION. The default is 1 representing forward integration
-        Returns
-        -------
-        trajectory
-        """
-        self.integration_time = 0 #total tiem for the whole while loop to run
-        self.total_time_choosing_A_D = 0 #total time spent choosing our limits A and D
-        self.total_time_taken_getting_L_values = 0 #variable for storing the time to calculate relevant L values
-        self.total_time_appending_values = 0 #variable for storing the time to calculate relevant appending values
-        self.total_time_calculating_move = 0 #variable for storing the time to calculate relevant appending values
-        self.total_time_checking_constraints = 0 #total time spent checking the constraints
-        self.total_time_adding_constraints_message = 0 #total time taken to add a reason to the constraint violation
-        self.total_time_running_each_loop = 0 #time from top to bottom of each loop
+    # def fast_simulate_trajectory_with_control(self, X0, direction=1, T=0.01, log_data=False):
+    #     """
+    #     Parameters
+    #     ----------
+    #     X0 : (x_1, x_2)
+    #         beginning state
+    #     T : float
+    #         sample size for simulation steps
+    #     self.Lambda_x : Function that sets actuation level
+    #         Lambda_x the percentage of actuation between U and L, value 0 < L < 1
+    #     direction : +1 or -1, optional
+    #         DESCRIPTION. The default is 1 representing forward integration
+    #     Returns
+    #     -------
+    #     trajectory
+    #     """
+    #     self.integration_time = 0 #total tiem for the whole while loop to run
+    #     self.total_time_choosing_A_D = 0 #total time spent choosing our limits A and D
+    #     self.total_time_taken_getting_L_values = 0 #variable for storing the time to calculate relevant L values
+    #     self.total_time_appending_values = 0 #variable for storing the time to calculate relevant appending values
+    #     self.total_time_calculating_move = 0 #variable for storing the time to calculate relevant appending values
+    #     self.total_time_checking_constraints = 0 #total time spent checking the constraints
+    #     self.total_time_adding_constraints_message = 0 #total time taken to add a reason to the constraint violation
+    #     self.total_time_running_each_loop = 0 #time from top to bottom of each loop
 
-        state = X0
-        i=0
-        trajectory = [state]
+    #     state = X0
+    #     i=0
+    #     trajectory = [state]
         
-        boundries = []
-        u_list = []
-        L_list = []
-        A_list = [] 
-        D_list = []
-        u_list_with_state = []
-        L_list_with_state = []
-        A_list_with_state = [] 
-        D_list_with_state = []
+    #     boundries = []
+    #     u_list = []
+    #     L_list = []
+    #     A_list = [] 
+    #     D_list = []
+    #     u_list_with_state = []
+    #     L_list_with_state = []
+    #     A_list_with_state = [] 
+    #     D_list_with_state = []
 
-        integration_complete = False
-        reason = "integration not completed yet"
+    #     integration_complete = False
+    #     reason = "integration not completed yet"
                 
-        start_integration_time =  time.time()
-        while(integration_complete == False):
+    #     start_integration_time =  time.time()
+    #     while(integration_complete == False):
 
-            start_loop_time = time.time()
-            """
-            ==============================Set values of A and D====================================
-            """
-            #determine the max and min range values for the input                
-            #D, A = self.fast_evaluate_upper_lower_bound_analytically(state)
-            try:
-                D, A = self.fast_evaluate_ufuncify_functions_upper_lower_bound_analytically(state)
-                if isnan(D):
-                    altD, altA = self.calc_upper_lower_bound_values(state)
-                    D= altD
-                if isnan(A):
-                    altD, altA = self.calc_upper_lower_bound_values(state)
-                    A = altA
-            except:
-                print("Something wrong with the evaluation of A and D")
-                break
-            x1, x2 = state[0], state[1]
-            if i == 0:
-                boundries = [(D, A)]
-            else:
-                boundries.append((D, A))    
+    #         start_loop_time = time.time()
+    #         """
+    #         ==============================Set values of A and D====================================
+    #         """
+    #         #determine the max and min range values for the input                
+    #         #D, A = self.fast_evaluate_upper_lower_bound_analytically(state)
+    #         try:
+    #             D, A = self.fast_evaluate_ufuncify_functions_upper_lower_bound_analytically(state)
+    #             if isnan(D):
+    #                 altD, altA = self.calc_upper_lower_bound_values(state)
+    #                 D= altD
+    #             if isnan(A):
+    #                 altD, altA = self.calc_upper_lower_bound_values(state)
+    #                 A = altA
+    #         except:
+    #             print("Something wrong with the evaluation of A and D")
+    #             break
+    #         x1, x2 = state[0], state[1]
+    #         if i == 0:
+    #             boundries = [(D, A)]
+    #         else:
+    #             boundries.append((D, A))    
 
-            end_choose_limits = time.time()
-            self.total_time_choosing_A_D = self.total_time_choosing_A_D + (end_choose_limits - start_loop_time)
-            """
-            ================input control=============================
-            """
-            start_choose_L = time.time()
-            L = self.Lambda_x(state)
-            end_choose_L = time.time()
-            self.total_time_taken_getting_L_values = self.total_time_taken_getting_L_values + (end_choose_L - start_choose_L)
+    #         end_choose_limits = time.time()
+    #         self.total_time_choosing_A_D = self.total_time_choosing_A_D + (end_choose_limits - start_loop_time)
+    #         """
+    #         ================input control=============================
+    #         """
+    #         start_choose_L = time.time()
+    #         L = self.Lambda_x(state)
+    #         end_choose_L = time.time()
+    #         self.total_time_taken_getting_L_values = self.total_time_taken_getting_L_values + (end_choose_L - start_choose_L)
 
-            u = D + L*(A-D)
-            start_appends = time.time()
-            if len(u_list)== 0 and log_data == True:
-                u_list = [u]
-                L_list = [L]
-                A_list = [A] 
-                D_list = [D]
-                u_list_with_state = [(u, state)]
-                L_list_with_state = [(L, state)]
-                A_list_with_state = [(A, state)] 
-                D_list_with_state = [(D, state)]
-            else:
-                u_list.append(u)
-                L_list.append(L)
-                A_list.append(A)
-                D_list.append(D)
-                u_list_with_state.append((u, state))
-                L_list_with_state.append((L, state))
-                A_list_with_state.append((A, state))
-                D_list_with_state.append((D, state))
+    #         u = D + L*(A-D)
+    #         start_appends = time.time()
+    #         if len(u_list)== 0 and log_data == True:
+    #             u_list = [u]
+    #             L_list = [L]
+    #             A_list = [A] 
+    #             D_list = [D]
+    #             u_list_with_state = [(u, state)]
+    #             L_list_with_state = [(L, state)]
+    #             A_list_with_state = [(A, state)] 
+    #             D_list_with_state = [(D, state)]
+    #         else:
+    #             u_list.append(u)
+    #             L_list.append(L)
+    #             A_list.append(A)
+    #             D_list.append(D)
+    #             u_list_with_state.append((u, state))
+    #             L_list_with_state.append((L, state))
+    #             A_list_with_state.append((A, state))
+    #             D_list_with_state.append((D, state))
             
-            end_appends= time.time()
-            self.total_time_appending_values = self.total_time_appending_values + (end_appends - start_appends)
+    #         end_appends= time.time()
+    #         self.total_time_appending_values = self.total_time_appending_values + (end_appends - start_appends)
             
-            start_calc_move = time.time()
+    #         start_calc_move = time.time()
             
-            delta_x1, delta_x2 = self.calc_change_s_sd(float(direction*x2), float(direction*u), T)
+    #         delta_x1, delta_x2 = self.calc_change_s_sd(float(direction*x2), float(direction*u), T)
             
-            x1 = x1 + delta_x1
-            x2 = x2 + delta_x2
+    #         x1 = x1 + delta_x1
+    #         x2 = x2 + delta_x2
 
-            state = (x1, x2)
+    #         state = (x1, x2)
 
-            end_calc_move = time.time()
-            self.total_time_calculating_move = self.total_time_calculating_move + (end_calc_move - start_calc_move)
+    #         end_calc_move = time.time()
+    #         self.total_time_calculating_move = self.total_time_calculating_move + (end_calc_move - start_calc_move)
 
-            start_check_constraints = time.time()
+    #         start_check_constraints = time.time()
 
-            result = self.fast_constraint_matrix(float(state[0]), float(state[1]), float(A), float(D))
-            if (result> 0).sum()>0:
-                violated= True, 
-                constraint = (result> 0).sum()
-            else:
-                violated= False, 
-                constraint = -1
+    #         result = self.fast_constraint_matrix(float(state[0]), float(state[1]), float(A), float(D))
+    #         if (result> 0).sum()>0:
+    #             violated= True, 
+    #             constraint = (result> 0).sum()
+    #         else:
+    #             violated= False, 
+    #             constraint = -1
 
-            end_check_constraints = time.time()
-            self.total_time_checking_constraints = self.total_time_checking_constraints + (end_check_constraints - start_check_constraints)
+    #         end_check_constraints = time.time()
+    #         self.total_time_checking_constraints = self.total_time_checking_constraints + (end_check_constraints - start_check_constraints)
             
-            start_add_constraint_message = time.time()
+    #         start_add_constraint_message = time.time()
 
-            if violated == True:
-                integration_complete = True
-                if constraint == 1:
-                    reason = "x1<x1_lower_lim"
-                elif constraint == 2:
-                    reason = "x1>x1_upper_lim"                
-                elif constraint == 3:
-                    reason = "x2<x2_lower_lim"                     
-                elif constraint ==4:
-                    reason = "L>U"
-                elif constraint > 4:
-                    reason = "additional constraint violated"  
-            else:
-                trajectory.append(state)
+    #         if violated == True:
+    #             integration_complete = True
+    #             if constraint == 1:
+    #                 reason = "x1<x1_lower_lim"
+    #             elif constraint == 2:
+    #                 reason = "x1>x1_upper_lim"                
+    #             elif constraint == 3:
+    #                 reason = "x2<x2_lower_lim"                     
+    #             elif constraint ==4:
+    #                 reason = "L>U"
+    #             elif constraint > 4:
+    #                 reason = "additional constraint violated"  
+    #         else:
+    #             trajectory.append(state)
 
-            end_add_constraint_message = time.time() 
-            self.total_time_adding_constraints_message = self.total_time_adding_constraints_message + (end_add_constraint_message - start_add_constraint_message)
+    #         end_add_constraint_message = time.time() 
+    #         self.total_time_adding_constraints_message = self.total_time_adding_constraints_message + (end_add_constraint_message - start_add_constraint_message)
             
-            i=i+1
-            end_loop_time = time.time()
-            self.total_time_running_each_loop = self.total_time_running_each_loop + (end_loop_time - start_loop_time)
+    #         i=i+1
+    #         end_loop_time = time.time()
+    #         self.total_time_running_each_loop = self.total_time_running_each_loop + (end_loop_time - start_loop_time)
 
-        end_integration_time =  time.time()
+    #     end_integration_time =  time.time()
 
-        self.integration_time = end_integration_time - start_integration_time
+    #     self.integration_time = end_integration_time - start_integration_time
 
-        return trajectory, u_list, L_list, A_list, D_list, A_list_with_state, D_list_with_state, u_list_with_state, L_list_with_state, reason        
+    #     return trajectory, u_list, L_list, A_list, D_list, A_list_with_state, D_list_with_state, u_list_with_state, L_list_with_state, reason        
 
     def select_lambda_x(self, L):
         """
@@ -713,7 +700,7 @@ class path_dynamics_controller():
         self.Lambda_x = Lambda_x
 
     def raw_control(self, state):
-        return self.const_actuation_level
+        return self.control_function_info
 
     def raw_linear_interpolation_control(self, state):
         L = self.control_function_info
@@ -1070,7 +1057,7 @@ class path_dynamics_controller():
         result = self.fast_constraint_matrix(float(state[0]), float(state[1]), float(A), float(D))
 
         if (result> 0).sum()>0:
-            return True, (result> 0).sum()
+            return True, np.argwhere(result> 0)
         else:
             return False, -1
 
@@ -1083,7 +1070,7 @@ class path_dynamics_controller():
         result = self.fast_constraint_matrix(float(state[0]), float(state[1]), float(A), float(D))
 
         if (result> 0).sum()>0:
-            return True, (result> 0).sum()
+            return True, int(np.argwhere(result> 0)[0,0])
         else:
             return False, -1
 
@@ -1332,88 +1319,88 @@ class path_dynamics_controller():
         return x
 
 
-    def lambda_simple_linear_saturation(self, state):
+    # def lambda_simple_linear_saturation(self, state):
         
-        """
-        form 2 straight lines for a specific case and apply to see what happens
-        """
-        x1 = state[0]
-        x2 = state[1]
+    #     """
+    #     form 2 straight lines for a specific case and apply to see what happens
+    #     """
+    #     x1 = state[0]
+    #     x2 = state[1]
         
-        """
-        define the upper line
-        """
-        m1 = 2
-        x2_upper = m1*x1 + 3
-        """
-        define the lower line
-        """
-        m2 = 3
-        x2_lower = m2*x1 + 1
+    #     """
+    #     define the upper line
+    #     """
+    #     m1 = 2
+    #     x2_upper = m1*x1 + 3
+    #     """
+    #     define the lower line
+    #     """
+    #     m2 = 3
+    #     x2_lower = m2*x1 + 1
 
-        linear_interpolation =  self.lambda_raw_linear_interpolation(x2, x2_upper, x2_lower)
+    #     linear_interpolation =  self.lambda_raw_linear_interpolation(x2, x2_upper, x2_lower)
         
-        L = self.saturation(linear_interpolation)
-        return L
+    #     L = self.saturation(linear_interpolation)
+    #     return L
     
-    def lambda_simple_quadratic_saturation(self, state):
+    # def lambda_simple_quadratic_saturation(self, state):
             
-        """
-        form 2 straight lines for a specific case and apply to see what happens
-        """
-        x1 = state[0]
-        x2 = state[1]
+    #     """
+    #     form 2 straight lines for a specific case and apply to see what happens
+    #     """
+    #     x1 = state[0]
+    #     x2 = state[1]
         
-        """
-        define the upper curve
-        """
-        x2_upper = 3*x1**2 + 3
-        """
-        define the lower curve
-        """
-        x2_lower = 3.5*x1**2 + 0.5
-        linear_interpolation =  self.lambda_raw_linear_interpolation(x2, x2_upper, x2_lower)
-        L = self.saturation(linear_interpolation)
+    #     """
+    #     define the upper curve
+    #     """
+    #     x2_upper = 3*x1**2 + 3
+    #     """
+    #     define the lower curve
+    #     """
+    #     x2_lower = 3.5*x1**2 + 0.5
+    #     linear_interpolation =  self.lambda_raw_linear_interpolation(x2, x2_upper, x2_lower)
+    #     L = self.saturation(linear_interpolation)
 
-        return L
+    #     return L
     
-    def lambda_single_guide_saturation(self, state):   
-        """
-        form 2 straight lines for a specific case and apply to see what happens
-        """
-        x1 = state[0]
-        x2 = state[1]
+    # def lambda_single_guide_saturation(self, state):   
+    #     """
+    #     form 2 straight lines for a specific case and apply to see what happens
+    #     """
+    #     x1 = state[0]
+    #     x2 = state[1]
         
-        """
-        define the curve
-        """
-        x2_bound = 3*x1**2 + 3
+    #     """
+    #     define the curve
+    #     """
+    #     x2_bound = 3*x1**2 + 3
 
-        if x2 >= x2_bound:
-            L=0
-        else:
-            L=1
+    #     if x2 >= x2_bound:
+    #         L=0
+    #     else:
+    #         L=1
 
-        return L
+    #     return L
     
-    def lambda_single_guide_2_saturation(self, state):
-        """
-        form 2 straight lines for a specific case and apply to see what happens
-        """
-        x1 = state[0]
-        x2 = state[1]
+    # def lambda_single_guide_2_saturation(self, state):
+    #     """
+    #     form 2 straight lines for a specific case and apply to see what happens
+    #     """
+    #     x1 = state[0]
+    #     x2 = state[1]
         
-        """
-        define the curve
-        """
-        x2_bound = 3*x1 + 0.5
+    #     """
+    #     define the curve
+    #     """
+    #     x2_bound = 3*x1 + 0.5
 
-        if x2 >= x2_bound:
-            L=0
-        else:
-            L=1
-        print("L=", L, state)
-        return L    
+    #     if x2 >= x2_bound:
+    #         L=0
+    #     else:
+    #         L=1
+    #     print("L=", L, state)
+    #     return L    
     
     
     def compute_torques_required(self, inputs_with_states):
@@ -1429,11 +1416,11 @@ class path_dynamics_controller():
         return  torque_vector, tau_1_val_with_state, tau_2_val_with_state, torque_vector_with_state
     
     
-    def approximate_sx(self, constraint_data):
-        """
-        method calculates S(x) for each point then does a polynomial approximation of the result
-        """
-        pass
+    # def approximate_sx(self, constraint_data):
+    #     """
+    #     method calculates S(x) for each point then does a polynomial approximation of the result
+    #     """
+    #     pass
     
 
         

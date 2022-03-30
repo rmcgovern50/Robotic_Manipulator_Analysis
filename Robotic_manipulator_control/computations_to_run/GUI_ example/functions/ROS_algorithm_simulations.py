@@ -10,6 +10,9 @@ from sympy import symbols
 import warnings
 import matplotlib.pyplot as plt
 
+from ml_robot_models import model
+
+
 
 def generate_extreme_trajectories_to_target(manipulator, \
                                             target_state, \
@@ -39,6 +42,27 @@ def perform_u_scan(manipulator, target_state):
     
     return evaluated_list   
 
+def matlab_model_Step_1(current_time,\
+           robot,\
+           simulation_parameters,\
+           eng,\
+           run_full_simulation=True,\
+           save_folder="step1_data/"):
+
+        
+    manipulator = model(eng, robot, simulation_parameters, current_time)
+
+    if run_full_simulation:
+        manipulator.run_full_path_dynamics_analysis()
+        stuff2pickle = manipulator.return_sim_results()
+        save_data.save_obj(stuff2pickle, save_folder, "step_1_manipulator_matlab")
+        
+    else:
+        pickledStuff = save_data.load_obj(save_folder, "step_1_manipulator_matlab")  
+        manipulator.set_sim_results(pickledStuff)
+        
+        
+    return manipulator
 
 def Step_1(current_time,\
            robot,\
@@ -73,15 +97,18 @@ def Step_2(current_time, manipulator, control,\
 
     resultant_upper_constraint = min_of_upper_constraints
     resultant_lower_constraint = max_of_lower_constraints
-
-
+    
     if run_curve_simulations:       
         #produce an extreme trajectory set from the extreme trajectories
 
-        T_d, _, reason_Td = control.simulate_trajectory(target_state[0], 0, -1, 0.05)
-        T_a, _, reason_Ta = control.simulate_trajectory(target_state[1], 1, -1, 0.05)
-        print("Td gives", T_d)            
-        print("Ta gives", T_a)
+        # T_d, _, reason_Td = control.simulate_trajectory(target_state[0], 0, -1, 0.05)
+        # T_a, _, reason_Ta = control.simulate_trajectory(target_state[1], 1, -1, 0.05)
+        control.select_lambda_x(float(0))
+        T_d, _, _, _, _, _, _, _, _, reason_Td = control.simulate_trajectory_with_control(target_state[0], -1, 0.05)
+        control.select_lambda_x(float(1))
+        T_a, _, _, _, _, _, _, _, _, reason_Ta = control.simulate_trajectory_with_control(target_state[1], -1, 0.05)        
+        #print("Td gives", T_d)            
+        #print("Ta gives", T_a)
         extreme_trajectories = [T_d, T_a]
         extreme_trajectories_reasons = [reason_Td, reason_Ta]
         #print(extreme_trajectories_reasons)
@@ -125,7 +152,7 @@ def Step_2(current_time, manipulator, control,\
         Run step 3 in the case where the T_a curve intersects the x1 axis
         """
         
-        if T_a_stop_condition == "x2<x2_lower_lim": 
+        if T_a_stop_condition == "x2<x2_lower_lim" or T_a_stop_condition == "additional constraint violated": 
             run_step_3 = True            
         else:
             run_step_3 = False    
@@ -617,6 +644,7 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
            interval_list, constraint_data, constraint_to_add, actuation_level,\
            integration_step = 0.001):
 
+    control.select_lambda_x(float(actuation_level))
     sx_roots, _ = find_sx_roots(poly_coeff_list, interval_list)
 
     """
@@ -632,9 +660,9 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
     region_boundary_list = np.array(region_boundary_list)
     region_boundary_list = np.sort(region_boundary_list[(region_boundary_list >= x1_final) & (region_boundary_list <= x1_initial)], axis=None)
     region_boundary_list = np.flip(region_boundary_list)
-    
+
     print("the region boundaries are ", region_boundary_list)
-    
+
     current_region_sign_list = ["unset"]
     i=0
     while i < len(region_boundary_list)-1:
@@ -647,12 +675,11 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
             current_region_sign_list.append("-ve")   
         #print("the midpoint is: ", midpoint, sx_eval)
         i = i + 1
-    
+
     current_region_sign_list.pop(0)
-    
+
     #print("current region sign list", current_region_sign_list)
     extended_boundary = [(0,0)] #placeholder
-
     
     sym_x1, sym_x2\
     = symbols('x1 x2')
@@ -677,7 +704,7 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
         x1_lower_lim = next_region_boundary
         x1_upper_lim = current_region_boundary
         modified_constraints_list = [-sym_x1 + x1_lower_lim,\
-                                sym_x1 - 1.0]#x1_upper_lim]
+                                sym_x1 - 1.0]#x1_upper_lim ]
         remaining_constraints = control.constraint_list[2:]
         new_constraint_list = modified_constraints_list + remaining_constraints
         #print(new_constraint_list)
@@ -692,8 +719,10 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
         """
         if current_region_sign == "-ve":
             #integrate backwards from the previous section to bridge the gap
-            T, _, reason = control.simulate_trajectory(current_state, L=actuation_level,\
-                          direction=-1, T=integration_step)
+            T, _, _, _, _, _, _, _, _, reason =\
+                control.simulate_trajectory_with_control(current_state, direction=-1, T=integration_step)
+            # T, _, reason = control.simulate_trajectory(current_state, L=actuation_level,\
+            #               direction=-1, T=integration_step)
                 
             extended_boundary.append(T) 
             current_state = T[-1]
@@ -709,26 +738,28 @@ def extend(manipulator, control, region_of_interest, poly_coeff_list,\
             #we must step down and integrate to cross this region
             print(i, " integrate from ", current_region_boundary, next_region_boundary)  
             modified_state = (current_state[0], current_state[1] + delta)
-            T, _, reason = control.simulate_trajectory(modified_state, L=actuation_level,\
-                                      direction=-1, T=integration_step)
+
+            # T, _, reason = control.simulate_trajectory(modified_state, L=actuation_level,\
+            #                           direction=-1, T=integration_step)
+            T, _, _, _, _, _, _, _, _, reason =\
+                 control.simulate_trajectory_with_control(modified_state, -1, T=integration_step)            
+            
             print("The length of the trajectory is ", len(T), "the reason is ", reason, "final point is ", T[0])
             extended_boundary.append(T)
             current_state = T[-1]
             
-
             #if we collide with the constraint early make more boundaries repeat
             while reason == "L>U" or reason == "additional constraint violated" or reason == "x2<x2_lower_lim":
                 modified_state = (current_state[0], current_state[1] + delta)
-                T, _, reason = control.simulate_trajectory(modified_state, L=0,\
-                                      direction=-1, T=integration_step)
+                # T, _, reason = control.simulate_trajectory(modified_state, L=0,\
+                #                       direction=-1, T=integration_step)
+                T, _, _, _, _, _, _, _, _, reason =\
+                    control.simulate_trajectory_with_control(modified_state, -1, T=integration_step)
                 extended_boundary.append(T)
                 current_state = T[-1]
                 extended_boundary.append(T)
                 if reason == "x1<x1_lower_lim":
                     break
-
-
-
         i = i + 1
     
     extended_boundary.pop(0)

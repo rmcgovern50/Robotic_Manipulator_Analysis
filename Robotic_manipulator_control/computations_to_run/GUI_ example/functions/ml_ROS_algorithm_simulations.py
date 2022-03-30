@@ -20,11 +20,11 @@ def Step_1(current_time,\
            save_folder="ROS_data/"):
 
         
-    manipulator = model(eng, simulation_parameters, current_time)
+    manipulator = model(eng, simulation_parameters['robot'],simulation_parameters, current_time)
 
     if run_full_simulation:
         manipulator.run_full_path_dynamics_analysis()
-        stuff2pickle = manipulator.return_sim_reults()
+        stuff2pickle = manipulator.return_sim_results()
         save_data.save_obj(stuff2pickle, save_folder, "step_1_manipulator")
         
     else:

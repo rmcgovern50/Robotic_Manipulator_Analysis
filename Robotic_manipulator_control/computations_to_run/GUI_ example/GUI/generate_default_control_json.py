@@ -1,7 +1,9 @@
 import json
 import sympy
 from sympy import symbols
-
+import os
+current_file_path = os.path.dirname(__file__) 
+os.chdir(current_file_path)
 """
 This file will allow us to generate standardised controller JSON files to setup a controller
 Identically over various runs

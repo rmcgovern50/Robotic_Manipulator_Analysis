@@ -25,6 +25,8 @@ class input_data:
         self.step4_cb2 = False   
         self.simulate_controller = False
         
+        self.use_matlab_cb = False
+
         self.performance_test_controller_cb = False
         
     @property
@@ -178,7 +180,14 @@ class input_data:
     @step4_cb2.setter
     def step4_cb2(self, value):
         self._step4_cb2 = value
-        
+ 
+
+    @property
+    def use_matlab_cb(self):
+        return self._use_matlab_cb
+    @use_matlab_cb.setter
+    def use_matlab_cb(self, value):
+        self._use_matlab_cb = value
         
     @property
     def performance_test_controller_cb(self):

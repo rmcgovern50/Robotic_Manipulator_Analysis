@@ -225,23 +225,17 @@ def plot_Ax_sit_8_1(list_to_plot, current_time, save=False):
 def plot_Dx_sit_8_1(list_to_plot, current_time, save=False):
     
     plotter = two_dof_robot_data_visualisation(current_time)
-         
-   
+
     plotter.plot_input_list(list_to_plot,\
                         save,\
                         filepath="paper_plots/",\
                         filename="D(x)_plot_8_1",\
                         title="D(x)")        
         
-        
 def plot_input_vs_x_sit_8_1(list_to_plot, current_time, save=False):      
     
     plotter = two_dof_robot_data_visualisation(current_time)
-         
-    
-    #print(list_to_plot)
-    
-    
+
     plotter.plot_actuation_level_vs_x(list_to_plot,\
                         save,\
                         filepath="paper_plots/",\

@@ -8,7 +8,6 @@ sys.path.append('../../../Robotic_manipulator_control')
 sys.path.append(os.path.realpath('../../..'))
 sys.path.append(os.path.realpath('../'))
 
-
 from sympy import symbols, sin, cos
 import tkinter as tk
 import run_simulation_code
@@ -23,6 +22,11 @@ class main_application:
     def __init__(self, master, input_data):
         self.master = master
         master.title("Simulation Toolbox")
+
+
+        self.default_parameter_filename = "default_simulation_parameters.txt"
+        self.default_matlab_parameter_filename = "default_matlab_simulation_parameters.txt"
+        self.default_control_parameter_filename = "default_control_parameters.txt"
 
         self.data = input_data
         
@@ -64,37 +68,86 @@ class main_application:
     #def poll(self):
         #print(self.data.default_situation)
         #"""" poll and do stuff"""
-        #self.master.after(1000, self.poll) 
+        #self.master.after(1000, self.poll)
         
     def populate_default_simulation_parameters_frame(self):
         
         self.use_custom_input_bool = tk.BooleanVar()
         c1 = tk.Checkbutton(self.default_simulation_parameters_frame, text = "Use Custom input", variable=self.use_custom_input_bool, command=self.use_custom_input)
-       
-        om_label = tk.Label(self.default_simulation_parameters_frame, text="Default situation:")
-        number = self.count_default_simulation_parameters()
-        i=0
-        option_list = []
-        while i < number:
-            option_list.append(str(i))
-            i=i+1
-        self.om_variable = tk.StringVar()
-        self.om_variable.set(option_list[0])
-    
-        self.om_default_parameters = tk.OptionMenu(self.default_simulation_parameters_frame, self.om_variable, *option_list)        
-        self.om_default_parameters.grid(row=0, column=1)
-        button_width = 100
-        button_height = 50
-        
-        self.data.default_situation = int(self.om_variable.get())
+        self.populate_default_simulation_om()
+
+        self.use_matlab_model_var = tk.BooleanVar()
+        c2 = tk.Checkbutton(self.default_simulation_parameters_frame, text = "Use matlab model", variable=self.use_matlab_model_var, command=self.use_matlab_model)
         
         spacer = tk.Label(self.default_simulation_parameters_frame, text="")
         #define button
         add_parameters = tk.Button(self.default_simulation_parameters_frame, text = 'Set parameters', width = 15, command = self.autofill_simulation_parameters)        
-        om_label.grid(row=0, column=0)
         c1.grid(row=1, column=0)
+        c2.grid(row=0, column=3)
         spacer.grid(row=1, column=1)
         add_parameters.grid(row=1, column=2, padx=10, pady=10)
+
+    def populate_default_simulation_om(self):
+        """
+        Method that generates the correct option list choice for the simulation we wish to run
+        """
+
+        if self.data.use_matlab_cb == False: 
+            #use values from the two dof manipulator to populate the json file
+            try:
+                self.om_default_parameters.destroy()
+            except:
+                pass
+
+    
+            om_label = tk.Label(self.default_simulation_parameters_frame, text="Default situation:")
+            option_list = self.get_option_list_data(self.default_parameter_filename, labelkey="simulation_label", elementkey="simulation_parameters")
+            # number = self.count_parameter_elements(self.default_parameter_filename)
+            # i=0
+            # option_list = []
+            # while i < number:
+            #     option_list.append(str(i))
+            #     i=i+1
+            self.om_variable = tk.StringVar()
+            self.om_variable.set(option_list[0])
+
+            self.om_controller_type = tk.StringVar()
+            self.om_controller_type.set(option_list[0])
+
+
+            self.om_default_parameters = tk.OptionMenu(self.default_simulation_parameters_frame, self.om_variable, *option_list)        
+            self.om_default_parameters.grid(row=0, column=1)
+            om_label.grid(row=0, column=0)
+
+            self.data.default_situation = self.om_variable.get()
+
+        elif self.data.use_matlab_cb == True:
+            #use values from the matlab manipulator to populate the json file
+            try:
+                self.om_default_parameters.destroy()
+            except:
+                pass
+
+            om_label = tk.Label(self.default_simulation_parameters_frame, text="Default situation:")
+            
+            option_list = self.get_option_list_data(self.default_matlab_parameter_filename, labelkey="simulation_label", elementkey="simulation_parameters")
+
+            # number = self.count_parameter_elements(self.default_matlab_parameter_filename)
+            # i=0
+            # option_list = []
+            # while i < number:
+            #     option_list.append(str(i))
+            #     i=i+1
+
+            self.om_variable = tk.StringVar()
+            self.om_variable.set(option_list[0])
+
+            self.om_default_parameters = tk.OptionMenu(self.default_simulation_parameters_frame, self.om_variable, *option_list)        
+            self.om_default_parameters.grid(row=0, column=1)
+            om_label.grid(row=0, column=0)
+
+            self.data.default_situation = self.om_variable.get()
+            print("populate the menu appropriately")
 
     def populate_simulation_parameters_frame(self):
         #create and place labels for x1 scan
@@ -222,9 +275,8 @@ class main_application:
         c2 = tk.Checkbutton(self.default_controller_frame, text = "run_time_experiment", variable=self.time_controller_bool, command=self.add_to_default_controller_frame)
         
         om_label = tk.Label(self.default_controller_frame, text="Default situation:")
-        number = self.count_default_simulation_parameters()
-                
-        number = self.count_default_controller_parameters()
+
+        number = self.count_parameter_elements(self.default_control_parameter_filename, elementkey="control_parameters")
         i=0
         option_list = []
         while i < number:
@@ -327,17 +379,27 @@ class main_application:
         self.data.step4_cb2 = self.fully_run_step_4.get()
         
     def autofill_simulation_parameters(self):
-        
+
         #allow the entry boxes to be changed
         for child in self.sim_setup_frame.winfo_children():
             child.configure(state='normal')
         
-        self.data.default_situation = int(self.om_variable.get())
+        self.data.default_situation = self.om_variable.get()
 
         print(self.data.default_situation)
-        default_simulation_paramters = self.get_default_simulation_parameters(self.data.default_situation)    
-        dsp = default_simulation_paramters
-             
+        default_simulation_parameters = self.extract_parameters_from_om_label(self.data.default_situation, \
+            self.default_parameter_filename, labelkey="simulation_label", elementkey="simulation_parameters")
+        #self.get_default_simulation_parameters(self.data.default_situation)    
+        
+        if self.use_matlab_model_var == False:
+            default_simulation_parameters = self.extract_parameters_from_om_label(self.data.default_situation, \
+            self.default_parameter_filename, labelkey="simulation_label", elementkey="simulation_parameters")
+            dsp = default_simulation_parameters
+        else:
+            default_simulation_parameters = self.extract_parameters_from_om_label(self.data.default_situation, \
+            self.default_matlab_parameter_filename, labelkey="simulation_label", elementkey="simulation_parameters")
+            dsp = default_simulation_parameters
+
         try:            
             #set parameters 
             self.x1_start.delete(0, tk.END)
@@ -406,7 +468,7 @@ class main_application:
         else:
             self.data.number_of_runs_to_average = 0
         
-        number = self.count_default_controller_parameters()
+        number = self.count_parameter_elements(self.default_control_parameter_filename, elementkey="control_parameters")
         i=0
         while i < number:
             control_parameters = self.get_default_controller_parameters(i)
@@ -443,13 +505,23 @@ class main_application:
             for child in self.sim_setup_frame.winfo_children():
                 child.configure(state='disable')
 
+    def use_matlab_model(self):
+        
+        self.data.use_matlab_cb = self.use_matlab_model_var.get()
+        print("using matlab model = ", self.data.use_matlab_cb)
+        #reset the option menu
+        self.populate_default_simulation_om()
+
+
 
     def use_custom_controller_input(self):
         print(self.use_custom_controller_bool.get())
+
         if self.use_custom_controller_bool.get() == True:            
             for child in self.controller_setup_frame.winfo_children():
                 child.configure(state='normal')
         elif self.use_custom_controller_bool.get() == False:
+        
             for child in self.controller_setup_frame.winfo_children():
                 child.configure(state='disable')
 
@@ -476,23 +548,41 @@ class main_application:
         File_menu.add_command(label="Simulation Plots",command=self.add_plotting_page)
         menubar.add_cascade(label="Plotting", menu=File_menu)
 
-    def count_default_simulation_parameters(self):
-        with open('default_simulation_parameters.txt') as json_file:
+    def count_parameter_elements(self, filename, elementkey="simulation_parameters"):
+        with open(filename) as json_file:
             data = json.load(json_file)
-            simulation_paramters = data['simulation_parameters']
+            simulation_paramters = data[elementkey]
 
         number_of_defaults_available = len(simulation_paramters)
         return number_of_defaults_available
 
+    def get_option_list_data(self, param_filename, labelkey, elementkey="simulation_parameters"):
 
-    def count_default_controller_parameters(self):
-        with open('default_control_parameters.txt') as json_file:
-            data = json.load(json_file)
-            simulation_paramters = data['control_parameters']
+        number = self.count_parameter_elements(param_filename, elementkey)
+        i=0
+        option_list = []
+        while i < number:
+            #parameters = self.get_default_controller_parameters(i)
+            with open(param_filename) as json_file:
+                data = json.load(json_file)
+                parameters = data[elementkey][i]
+            
+            option_list.append(parameters[labelkey])
+            i=i+1
 
-        number_of_defaults_available = len(simulation_paramters)
-        return number_of_defaults_available
+        return option_list
 
+    def extract_parameters_from_om_label(self, situation, param_filename, labelkey, elementkey="simulation_parameters"):
+        number = self.count_parameter_elements(param_filename, elementkey)
+        i=0
+        while i < number:
+            with open(param_filename) as json_file:
+                data = json.load(json_file)
+                parameters = data[elementkey][i]
+            if parameters[labelkey] == situation:
+                break
+            i=i+1
+        return parameters
 
     def get_default_simulation_parameters(self, default_number):
         
@@ -588,8 +678,8 @@ class main_application:
         #self.Cqs, self.gqs()
         print(self.data.performance_test_controller_cb)
         if self.data.performance_test_controller_cb == True:
-            print(self.data.simulation_object.robot.Mqs)
-            #run_controller_code.controller_simulation_performance_tests(controller_sim, self.data)
+            #print(self.data.simulation_object.robot.Mqs)
+            run_controller_code.controller_simulation_performance_tests(controller_sim, self.data)
         else:
             controller_sim.run_state_feedback_controller()
             #controller_sim.test_new_constraint_function()

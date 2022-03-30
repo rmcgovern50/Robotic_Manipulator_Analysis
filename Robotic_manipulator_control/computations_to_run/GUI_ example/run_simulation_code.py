@@ -9,7 +9,8 @@ import datetime as dt
 import numpy as np
 from my_sorting import combine_to_tuples
 from functions.controller import path_dynamics_controller
-
+import matlab.engine
+import os
 
 import save_data as save_data
 from scipy.optimize import lsq_linear as lsq_linear
@@ -28,10 +29,21 @@ class simulation:
         things_to_run is a dictionary that can be expned to suit, it essentially 
         informs the simulation which parts can be loaded from data and which are good to go
         """
+
         self.data = GUI_input_data
         self.current_time =  dt.datetime.now()
-        self.robot = simulation_parameters['robot']
         
+        #initialise matlab engine if necessary
+        if self.data.use_matlab_cb==True:
+            print("Initialising matlab engine ")
+            self.eng = matlab.engine.start_matlab()
+            #cwd = os.getcwd()
+            #s = self.eng.genpath(cwd)
+            self.eng.addpath(os.path.realpath('../matlab_functions'), nargout=0)
+            #s = '../matlab_functions'
+            #self.eng.addpath(s, nargout=0)
+
+        self.robot = simulation_parameters['robot']
         del simulation_parameters['robot']
         self.simulation_parameters = simulation_parameters
         self.run = things_to_run
@@ -49,10 +61,11 @@ class simulation:
         min (natural upper, additional upper)
         """
         self.generate_resultant_constraints()
-        """
-        now create control object to allow for trajectory generation with the additional
-        constraints
-        """
+        # """
+        # now create control object to allow for trajectory generation with the additional
+        # constraints
+        # """
+        self.run['step 1'][1]=True #set this to test
         if self.run['step 1'][1] == True:
             self.control = path_dynamics_controller(self.manipulator)
             upper_ad_constraint = self.data.additional_upper_constraint
@@ -77,20 +90,37 @@ class simulation:
             self.control = path_dynamics_controller(self.manipulator, form_sped_up_constraints=False)
             #self.control.fast_constraint_matrix = fast_constraint_matrix
             self.control.very_fast_Ax_Dx_list = very_fast_Ax_Dx_list
-
+        
         self.create_initial_trajectories() #perform first back simulation to the constraints
         
         self.extend_lower()
         self.extend_upper()
-
+        self.data.control_object = self.control
+        
     def create_manipulator(self):
         print("Performing step 1")
         #step 1
-        self.manipulator = sim.Step_1(self.current_time,\
-                                 self.robot,\
-                                 self.simulation_parameters,\
-                                 run_full_simulation=self.run['step 1'][0],\
-                                 save_folder=self.simulation_parameters['folder_name'])
+        
+        if self.data.use_matlab_cb==False:
+            #generate manipulator model using two DOF machine
+            self.manipulator = sim.Step_1(self.current_time,\
+                                    self.robot,\
+                                    self.simulation_parameters,\
+                                    run_full_simulation=self.run['step 1'][0],\
+                                    save_folder=self.simulation_parameters['folder_name'])
+        else:
+            #generate manipulator model using matlab robot model
+            print("use matlab model instead")
+            self.manipulator = sim.matlab_model_Step_1(self.current_time,\
+                                                        self.robot,\
+                                                        self.simulation_parameters,\
+                                                        self.eng,\
+                                                        run_full_simulation=self.run['step 1'][0],\
+                                                        save_folder=self.simulation_parameters['folder_name'])
+
+
+
+            #self.manipulator = sim.ml_Step_1()
         print("Step 1 complete")
         
     def create_initial_trajectories(self, rough_plot=False):
@@ -371,7 +401,6 @@ class simulation:
         return coeff_list, true_interval_list
 
     def polynomial_approximate_data(self, data_x, data_y, order, rough_plot=False):
-        
         
         input_data = np.array(np.array(data_x), ndmin=2).T
         ones_col = np.ones((len(input_data),1))

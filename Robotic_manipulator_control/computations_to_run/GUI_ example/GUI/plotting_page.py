@@ -114,7 +114,7 @@ class plotting:
             self.data.simulation_object.plot_polynomial_approximation_sx(boundary="lower")
 
         if self.plot_ROS_bounds_with_constraints.get():
-            self.data.control_object.plot_ROS_bounds_with_constraints()
+            self.data.simulation_object.plot_ROS_bounds_with_constraints()
             
         if self.plot_control_trajectory.get():
             self.data.control_object.plot_control_trajectory()

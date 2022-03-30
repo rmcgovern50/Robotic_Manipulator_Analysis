@@ -224,7 +224,7 @@ def paper_plot_constraint_reach_avoid_target(target_set, trajectory_list,label_l
                     Line2D([0], [0], marker='o', color='w', label='Scatter',\
                           markerfacecolor='blue', markersize=10)]
         
-    ax.legend(custom_lines, ['$\mathcal{X}$', '$\mathcal{R}(\mathcal{X}_{T})$', '$\mathcal{X}_{T}$', '$\mathcal{T}_f (x_0, \lambda(x))$', '$x_0$'],  prop={'size': 10})
+    #ax.legend(custom_lines, ['$\mathcal{X}$', '$\mathcal{R}(\mathcal{X}_{T})$', '$\mathcal{X}_{T}$', '$\mathcal{T}_f (x_0, \lambda(x))$', '$x_0$'],  prop={'size': 10})
 
     #plt.grid()
     plt.xlabel("$x_1$")

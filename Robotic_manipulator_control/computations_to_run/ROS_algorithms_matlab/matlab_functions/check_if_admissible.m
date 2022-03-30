@@ -35,8 +35,8 @@ ai = (tau_max - Cs*x2^2 - gs)./Ms;
 di = (tau_min - Cs*x2^2 - gs)./Ms;
    
 val = [];
-A = []
-D = []
+A = [];
+D = [];
 for i = 1:length(Ms)
     if Ms(i) > 0
         A(end+1) = ai(i);

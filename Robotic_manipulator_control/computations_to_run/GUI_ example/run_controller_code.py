@@ -26,6 +26,7 @@ import gc
 class controller_simulation:
     def __init__(self, simulation_object, GUI_input_data):
         self.data = GUI_input_data
+        self.simulation_object = simulation_object
         self.control = simulation_object.control
         self.lower_bound_ROS = simulation_object.lower_bound_ROS
         self.upper_bound_ROS = simulation_object.upper_bound_ROS
@@ -224,7 +225,46 @@ class controller_simulation:
             print(msg, " ", seconds, " seconds")
 
     def plot_control_trajectory(self):
+
+
+
+
+        #this is a hacky solution to closing the bounds manually for paper plots
+        enclose_bounds = True
+        if enclose_bounds==True:
+            x1_val = np.linspace(0.0, 0.0, num=1000)
+            x2_val = np.linspace(0.0, 6.3, num=1000)
+
+            plt.plot(x1_val, x2_val, '-', color='green', linewidth=3)
+
+            x1_val = np.linspace(1.0, 1.0, num=1000)
+            x2_val = np.linspace(4.0, 8.5, num=1000)
+            plt.plot(x1_val, x2_val, '-', color='red')
+
+            if self.data.additional_upper_constraint!= "N/A":
+                x1_val = [x[0] for x in self.simulation_object.resultant_upper_constraint_curve_data]
+                y1_val = [x[1] for x in self.simulation_object.resultant_upper_constraint_curve_data] 
+                
+                zipped_lists = zip(x1_val, y1_val)
+                sorted_pairs = sorted(zipped_lists)
+                tuples = zip(*sorted_pairs)
+                x1_val, y1_val = [ list(tupl) for tupl in tuples]
+                
+                plt.plot(x1_val, y1_val, '-', color='green',label="upper resultant", linewidth=3)  
+
+            if self.data.additional_lower_constraint != "N/A":                
+                x1_val = [x[0] for x in self.simulation_object.resultant_lower_constraint_curve_data]
+                y1_val = [x[1] for x in self.simulation_object.resultant_lower_constraint_curve_data]
+                
+                zipped_lists = zip(x1_val, y1_val)
+                sorted_pairs = sorted(zipped_lists)
+                tuples = zip(*sorted_pairs)
+                x1_val, y1_val = [ list(tupl) for tupl in tuples]   
             
+                plt.plot(x1_val, y1_val, '-', color='green',label="lower resultant", linewidth=3)  
+
+
+
         try:
             x1_val = [x[0] for x in self.control_trajectory]
             y1_val = [x[1] for x in self.control_trajectory]   
@@ -241,7 +281,6 @@ class controller_simulation:
                 x2 = self.data.lower_guide.subs(x1_sym, x1)
                 x2_val_list.append(x2)
             x2_val_list.pop(0)
-                        
             plt.plot(x1_val, x2_val_list, '-', color='blue',label="lower control guide", ms=2)
         except:
             print("No additional upper control guide available")
@@ -257,10 +296,10 @@ class controller_simulation:
             x1_val, y1_val = [ list(tupl) for tupl in tuples]
             #x1_val, y1_val = self.bubble_sort_lists_for_plotting(x1_val, y1_val)
 
-            plt.plot(x1_val, y1_val, '-', color='green',label="upper constraint", ms=4)
+            plt.plot(x1_val, y1_val, '-', color='orange',label="upper constraint", ms=4)
         except:
             print("Can't plot upper bound")
-            
+        
         try:
             x1_val = [x[0] for x in self.lower_bound_ROS]
             y1_val = [x[1] for x in self.lower_bound_ROS]
@@ -271,7 +310,7 @@ class controller_simulation:
             x1_val, y1_val = [ list(tupl) for tupl in tuples]
 
             #x1_val, y1_val = self.bubble_sort_lists_for_plotting(x1_val, y1_val)            
-            plt.plot(x1_val, y1_val, '-', color='green',label="lower constraint", ms=4)        
+            plt.plot(x1_val, y1_val, '-', color='orange',label="lower constraint", ms=4)        
         except:
             print("Can't plot lower bound")
 
@@ -288,6 +327,7 @@ class controller_simulation:
             plt.plot(x1_val, x2_val_list, '-', color='blue',label="upper control guide", ms=2)
         except:
             print("No additional upper control guide available")
+
 
         #print(self.control_trajectory)        
         plt.xlabel("$x_1$")
